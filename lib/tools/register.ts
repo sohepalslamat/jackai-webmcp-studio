@@ -2,7 +2,7 @@
 
 import { guarded, type ToolName, type ConsentGate, type ToolCallRecord } from '../contracts';
 
-/* أنواع مبسّطة. استبدلها بحزمة webmcp-types إن ثبّتّها. */
+/* Minimal typings. Swap for the webmcp-types package if you pin it. */
 declare global {
   interface Document {
     modelContext?: {
@@ -24,16 +24,20 @@ declare global {
   }
 }
 
-/** واجهة المتجر التي يوفّرها مسار "نواة المنتج". */
+/** The store contract provided by the product-core track. */
 export interface Store {
   list(): Array<{ id: string; name: string; purpose: string; published: boolean }>;
   get(id: string): { id: string; name: string } | undefined;
   create(input: { name: string; purpose: string; tone?: string; language?: string }): string;
   addKnowledge(id: string, text: string): number;
-  test(id: string, message: string): Promise<string>;
+  test(id: string, message: string, signal?: AbortSignal): Promise<string>;
   publish(id: string, channel: string): void;
   share(id: string, email: string): void;
   remove(id: string): void;
+  /** How many assistants exist. Drives registration of the sensitive tools. */
+  count(): number;
+  /** Notifies on every mutation, so registration can follow state. */
+  subscribe(fn: () => void): () => void;
 }
 
 export interface RegisterOptions {
@@ -42,7 +46,7 @@ export interface RegisterOptions {
   onCall?: (r: ToolCallRecord) => void;
 }
 
-/** نص التأكيد الذي يراه المستخدم. يصوغه التطبيق من الوسائط، لا النموذج. */
+/** The confirmation text the user reads. Composed by the app from the arguments, never by the model. */
 function summarize(store: Store) {
   return (tool: ToolName, args: any): string => {
     const nameOf = (id: string) => store.get(id)?.name ?? `مساعد غير معروف (${id})`;
@@ -59,23 +63,30 @@ function summarize(store: Store) {
   };
 }
 
+type Guard = {
+  gate: ConsentGate;
+  summarize: (tool: ToolName, args: any) => string;
+  onCall?: (r: ToolCallRecord) => void;
+};
+
 /**
- * يسجّل الأدوات ويعيد دالة إلغاء.
- *
- * ملاحظتان مقصودتان:
- *  - publish / share / delete تُسجَّل فقط حين يوجد مساعد واحد على الأقل.
- *    هذا يُظهر بُعد "الحالة" في المعيار ويولّد حدث toolchange حقيقيًا.
- *  - لا توجد أداة تمنح موافقة. البحث في هذا الملف عن grant لن يجد شيئًا.
+ * Turns a thrown StudioError into a sentence the agent can act on, rather than
+ * letting it surface as an opaque tool failure.
  */
-export async function registerTools(opts: RegisterOptions): Promise<() => void> {
-  const mc = document.modelContext;
-  if (!mc) return () => {};
+function explain(e: unknown): string {
+  return e instanceof Error ? e.message : 'تعذّر تنفيذ الفعل.';
+}
 
-  const { store, gate, onCall } = opts;
-  const guard = { gate, summarize: summarize(store), onCall };
-  const controller = new AbortController();
-  const signal = controller.signal;
+/* ------------------------------------------------------------------ */
+/* Low-sensitivity tools: always registered                            */
+/* ------------------------------------------------------------------ */
 
+async function registerLowTools(
+  mc: NonNullable<Document['modelContext']>,
+  store: Store,
+  guard: Guard,
+  signal: AbortSignal,
+) {
   const wrap = (name: ToolName, fn: (a: any, c: any) => Promise<string>) =>
     guarded(name, fn, guard);
 
@@ -106,8 +117,12 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
         required: ['name', 'purpose'],
       },
       execute: wrap('create_assistant', async (a) => {
-        const id = store.create(a);
-        return `أُنشئ المساعد بمعرّف ${id}. لم يُنشر بعد.`;
+        try {
+          const id = store.create(a);
+          return `أُنشئ المساعد بمعرّف ${id}. لم يُنشر بعد.`;
+        } catch (e) {
+          return explain(e);
+        }
       }),
     },
     { signal },
@@ -127,8 +142,12 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
       },
       annotations: { untrustedContentHint: true },
       execute: wrap('add_knowledge', async (a) => {
-        const n = store.addKnowledge(a.id, a.text);
-        return `صار عدد مقاطع المعرفة ${n}.`;
+        try {
+          const n = store.addKnowledge(a.id, a.text);
+          return `صار عدد مقاطع المعرفة ${n}.`;
+        } catch (e) {
+          return explain(e);
+        }
       }),
     },
     { signal },
@@ -144,12 +163,32 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
         required: ['id', 'message'],
       },
       annotations: { readOnlyHint: true, untrustedContentHint: true },
-      execute: wrap('test_assistant', async (a, c) => store.test(a.id, a.message)),
+      execute: wrap('test_assistant', async (a, c) => {
+        try {
+          // The signal is threaded all the way into the simulated latency, so an
+          // agent-side abort actually cancels the run.
+          return await store.test(a.id, a.message, c?.signal);
+        } catch (e) {
+          return explain(e);
+        }
+      }),
     },
     { signal },
   );
+}
 
-  /* ---------- الأدوات الحسّاسة: تمرّ من البوابة ---------- */
+/* ------------------------------------------------------------------ */
+/* High-sensitivity tools: registered only while a target exists       */
+/* ------------------------------------------------------------------ */
+
+async function registerHighTools(
+  mc: NonNullable<Document['modelContext']>,
+  store: Store,
+  guard: Guard,
+  signal: AbortSignal,
+) {
+  const wrap = (name: ToolName, fn: (a: any, c: any) => Promise<string>) =>
+    guarded(name, fn, guard);
 
   await mc.registerTool(
     {
@@ -166,8 +205,12 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
       },
       annotations: { readOnlyHint: false },
       execute: wrap('publish_assistant', async (a) => {
-        store.publish(a.id, a.channel);
-        return `نُشر على ${a.channel}.`;
+        try {
+          store.publish(a.id, a.channel);
+          return `نُشر على ${a.channel}.`;
+        } catch (e) {
+          return explain(e);
+        }
       }),
     },
     { signal },
@@ -184,8 +227,12 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
         required: ['id', 'email'],
       },
       execute: wrap('share_assistant', async (a) => {
-        store.share(a.id, a.email);
-        return `أُرسلت دعوة إلى ${a.email}.`;
+        try {
+          store.share(a.id, a.email);
+          return `أُرسلت دعوة إلى ${a.email}.`;
+        } catch (e) {
+          return explain(e);
+        }
       }),
     },
     { signal },
@@ -201,12 +248,75 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
         required: ['id'],
       },
       execute: wrap('delete_assistant', async (a) => {
-        store.remove(a.id);
-        return 'حُذف.';
+        try {
+          store.remove(a.id);
+          return 'حُذف.';
+        } catch (e) {
+          return explain(e);
+        }
       }),
     },
     { signal },
   );
+}
 
-  return () => controller.abort();
+/* ------------------------------------------------------------------ */
+/* Registration                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Registers the tools and returns an unregister function.
+ *
+ * Two deliberate notes:
+ *  - publish / share / delete are registered only while at least one assistant
+ *    exists. They appear on the first create and disappear when the last one is
+ *    deleted, which exercises the standard's state dimension and emits a real
+ *    toolchange event.
+ *  - No tool grants consent. Searching this file for `grant` finds nothing.
+ */
+export async function registerTools(opts: RegisterOptions): Promise<() => void> {
+  const mc = document.modelContext;
+  if (!mc) return () => {};
+
+  const { store, gate, onCall } = opts;
+  const guard: Guard = { gate, summarize: summarize(store), onCall };
+  const controller = new AbortController();
+
+  await registerLowTools(mc, store, guard, controller.signal);
+
+  // Reconciles the sensitive tools against store state. Every run is chained
+  // onto the previous one so a create-then-delete burst cannot interleave into
+  // a double registration.
+  let highController: AbortController | null = null;
+  let queue: Promise<void> = Promise.resolve();
+
+  const syncHigh = () => {
+    queue = queue
+      .then(async () => {
+        if (controller.signal.aborted) return;
+        const wanted = store.count() > 0;
+
+        if (wanted && !highController) {
+          highController = new AbortController();
+          await registerHighTools(mc, store, guard, highController.signal);
+        } else if (!wanted && highController) {
+          // Aborting unregisters the tools, which fires toolchange.
+          highController.abort();
+          highController = null;
+        }
+      })
+      .catch(() => {
+        // A failed reconcile must not poison the queue for later runs.
+      });
+  };
+
+  syncHigh();
+  const unsubscribe = store.subscribe(syncHigh);
+
+  return () => {
+    unsubscribe();
+    highController?.abort();
+    highController = null;
+    controller.abort();
+  };
 }
