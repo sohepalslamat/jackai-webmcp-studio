@@ -25,3 +25,7 @@ next-env.d.ts
 npm-debug.log*
 pnpm-debug.log*
 coverage/
+
+# Internal coordination docs, kept out of the public repo
+AGENT_BRIEFS.md
+CLAUDE.md
