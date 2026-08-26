@@ -85,7 +85,7 @@ export function EmptyState() {
 
       <button
         onClick={() => router.push('/new')}
-        className="mt-5 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        className="mt-5 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
       >
         {t('empty.create')}
       </button>
@@ -99,7 +99,7 @@ export function EmptyState() {
           <button
             key={tpl.key}
             onClick={() => useTemplate(tpl)}
-            className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-start transition hover:border-slate-400 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+            className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-start transition hover:border-slate-400 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
           >
             <span className="text-xl" aria-hidden="true">
               {tpl.icon}

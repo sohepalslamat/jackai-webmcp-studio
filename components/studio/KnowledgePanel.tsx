@@ -59,7 +59,7 @@ export function KnowledgePanel({ assistant }: { assistant: Assistant }) {
         )}
         <button
           type="submit"
-          className="mt-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+          className="mt-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
         >
           {t('assistant.knowledge_add')}
         </button>

@@ -55,7 +55,7 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
         </select>
         <button
           onClick={() => run(() => store.publish(assistant.id, channel))}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
           {t('assistant.publish')}
         </button>
@@ -83,7 +83,7 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
               setEmail('');
             })
           }
-          className="rounded-lg border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+          className="rounded-lg border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
         >
           {t('assistant.share')}
         </button>
@@ -106,7 +106,7 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
         {!confirmingDelete ? (
           <button
             onClick={() => setConfirmingDelete(true)}
-            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
           >
             {t('assistant.delete')}
           </button>
@@ -118,7 +118,7 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
                 store.remove(assistant.id);
                 router.push('/');
               }}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
             >
               {t('assistant.delete_yes')}
             </button>

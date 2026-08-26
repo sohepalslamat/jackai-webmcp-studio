@@ -21,7 +21,7 @@ export default function AssistantsPage() {
         </h2>
         <Link
           href="/new"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
           {t('nav.new')}
         </Link>
@@ -32,7 +32,7 @@ export default function AssistantsPage() {
           <li key={a.id}>
             <Link
               href={`/assistant/${a.id}`}
-              className="block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+              className="block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

@@ -265,6 +265,16 @@ async function registerHighTools(
 /* ------------------------------------------------------------------ */
 
 /**
+ * The registry is a single global keyed by tool name, so two concurrent
+ * registrations do not compose: the second overwrites the first, and then the
+ * first one's teardown unregisters the survivor. React StrictMode mounts every
+ * effect twice in development, which is exactly that race.
+ *
+ * One active registration per document, refcounted, keeps the registry honest.
+ */
+let active: { refs: number; teardown: () => void } | null = null;
+
+/**
  * Registers the tools and returns an unregister function.
  *
  * Two deliberate notes:
@@ -277,6 +287,18 @@ async function registerHighTools(
 export async function registerTools(opts: RegisterOptions): Promise<() => void> {
   const mc = document.modelContext;
   if (!mc) return () => {};
+
+  if (active) {
+    active.refs += 1;
+    return releaseOnce(() => {
+      if (!active) return;
+      active.refs -= 1;
+      if (active.refs <= 0) {
+        active.teardown();
+        active = null;
+      }
+    });
+  }
 
   const { store, gate, onCall } = opts;
   const guard: Guard = { gate, summarize: summarize(store), onCall };
@@ -313,10 +335,32 @@ export async function registerTools(opts: RegisterOptions): Promise<() => void> 
   syncHigh();
   const unsubscribe = store.subscribe(syncHigh);
 
+  active = {
+    refs: 1,
+    teardown: () => {
+      unsubscribe();
+      highController?.abort();
+      highController = null;
+      controller.abort();
+    },
+  };
+
+  return releaseOnce(() => {
+    if (!active) return;
+    active.refs -= 1;
+    if (active.refs <= 0) {
+      active.teardown();
+      active = null;
+    }
+  });
+}
+
+/** Guards against a caller invoking its unregister function more than once. */
+function releaseOnce(fn: () => void): () => void {
+  let released = false;
   return () => {
-    unsubscribe();
-    highController?.abort();
-    highController = null;
-    controller.abort();
+    if (released) return;
+    released = true;
+    fn();
   };
 }
