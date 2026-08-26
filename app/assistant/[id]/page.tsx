@@ -8,8 +8,19 @@ import { KnowledgePanel } from '../../../components/studio/KnowledgePanel';
 import { TestChat } from '../../../components/studio/TestChat';
 import { DangerActions } from '../../../components/studio/DangerActions';
 
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export default function AssistantPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id: raw } = use(params);
+  // Route params arrive percent-encoded. Decode so a pasted or shared URL
+  // resolves to the same assistant the store knows about.
+  const id = safeDecode(raw);
   const assistant = useAssistant(id);
   const { t } = useT();
 

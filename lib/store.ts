@@ -211,10 +211,19 @@ export class StudioStore {
     return found;
   }
 
+  /**
+   * Ids stay ASCII on purpose. They travel through route params and through
+   * tool arguments, and an Arabic slug arrives back percent-encoded, which
+   * would never match the stored id again.
+   */
   private nextId(name: string): string {
     this.seq += 1;
-    const slug = normalize(name).trim().split(/\s+/).slice(0, 2).join('-') || 'assistant';
-    return `${slug}-${this.seq}`;
+    const ascii = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 24);
+    return ascii ? `${ascii}-${this.seq}` : `assistant-${this.seq}`;
   }
 
   /* ---------- the Store interface consumed by lib/tools/register.ts ---------- */

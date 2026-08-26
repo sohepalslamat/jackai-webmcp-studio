@@ -21,6 +21,16 @@ interface ConsentContextValue {
 
 const Ctx = createContext<ConsentContextValue | null>(null);
 
+/**
+ * useSyncExternalStore requires a referentially stable server snapshot.
+ * An inline `() => []` allocates a fresh array on every render and drives
+ * React into an infinite update loop, so both live here as frozen constants.
+ */
+const NO_ENTRIES: ReadonlyArray<ConsentEntry> = Object.freeze([]);
+const NO_CALLS: ReadonlyArray<ToolCallRecord> = Object.freeze([]);
+const getNoEntries = () => NO_ENTRIES;
+const getNoCalls = () => NO_CALLS;
+
 export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const gate = useMemo(() => new ConsentLedger(), []);
   const callsRef = useRef<ToolCallRecord[]>([]);
@@ -29,7 +39,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const entries = useSyncExternalStore(
     (cb) => gate.subscribe(cb),
     () => gate.entries(),
-    () => [] as ReadonlyArray<ConsentEntry>,
+    getNoEntries,
   );
 
   const calls = useSyncExternalStore(
@@ -38,7 +48,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
       return () => callListeners.current.delete(cb);
     },
     () => callsRef.current,
-    () => [] as ToolCallRecord[],
+    getNoCalls,
   );
 
   const recordCall = (r: ToolCallRecord) => {

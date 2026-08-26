@@ -19,7 +19,15 @@ export class ConsentLedger implements ConsentGate {
   private listeners = new Set<() => void>();
   private seq = 0;
 
+  /**
+   * Cached view handed to useSyncExternalStore. React demands a reference that
+   * only changes when the data changes; rebuilding the array on every read
+   * would spin the render loop forever. Invalidated on every mutation.
+   */
+  private snapshot: ReadonlyArray<ConsentEntry> | null = null;
+
   private emit() {
+    this.snapshot = null;
     for (const fn of this.listeners) fn();
   }
 
@@ -36,6 +44,7 @@ export class ConsentLedger implements ConsentGate {
         changed = true;
       }
     }
+    if (changed) this.snapshot = null;
     return changed;
   }
 
@@ -104,7 +113,12 @@ export class ConsentLedger implements ConsentGate {
 
   entries(): ReadonlyArray<ConsentEntry> {
     this.sweep();
-    return [...this.items.values()].sort((a, b) => b.requestedAt - a.requestedAt);
+    if (!this.snapshot) {
+      this.snapshot = [...this.items.values()]
+        .map((e) => ({ ...e }))
+        .sort((a, b) => b.requestedAt - a.requestedAt);
+    }
+    return this.snapshot;
   }
 
   pending(): ConsentEntry | undefined {
