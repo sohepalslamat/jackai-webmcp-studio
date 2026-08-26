@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { useAssistants } from '../lib/useStore';
-import { useT } from '../lib/i18n';
 import { EmptyState } from '../components/studio/EmptyState';
 
 export default function AssistantsPage() {
   const assistants = useAssistants();
-  const { t } = useT();
 
   if (assistants.length === 0) return <EmptyState />;
 
@@ -15,15 +13,13 @@ export default function AssistantsPage() {
     <div>
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-sm font-medium text-slate-600">
-          {assistants.length === 1
-            ? t('list.count_one')
-            : t('list.count_other', { n: assistants.length })}
+          {assistants.length === 1 ? '1 assistant' : `${assistants.length} assistants`}
         </h2>
         <Link
           href="/new"
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
-          {t('nav.new')}
+          New assistant
         </Link>
       </div>
 
@@ -46,12 +42,12 @@ export default function AssistantsPage() {
                       : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {a.published ? t('list.published') : t('list.draft')}
+                  {a.published ? 'Published' : 'Draft'}
                 </span>
               </div>
 
               <p className="mt-3 font-mono text-xs text-slate-400">
-                {a.id} · {t('assistant.knowledge_count', { n: a.knowledge.length })}
+                {a.id} · {a.knowledge.length} snippet{a.knowledge.length === 1 ? '' : 's'}
               </p>
             </Link>
           </li>

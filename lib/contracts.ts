@@ -1,16 +1,17 @@
 /**
- * العقد المشترك — READ ONLY for agents.
+ * The shared contract - READ ONLY.
  *
- * كل ما في هذا الملف ثابت وقت البناء. لا يُقرأ شيء منه من وسائط الأداة،
- * ولا من النموذج، ولا من الصفحة أثناء التشغيل. هذا هو الشرط P2 في الورقة:
- * الحساسية موقّعة/ثابتة، فلا يستطيع النموذج تخفيض تصنيف فعل حسّاس ليمرّ.
+ * Everything here is fixed at build time. None of it is read from tool
+ * arguments, from the model, or from the page at runtime. This is condition P2
+ * in the paper: sensitivity is signed or fixed, so the model cannot downgrade a
+ * sensitive action to make it pass.
  *
- * ممنوع على أي مسار عمل تعديل هذا الملف. أي حاجة لتغييره تمرّ عليك أنت.
+ * No work track edits this file. Any need to change it goes through the owner.
  */
 
 export type Sensitivity = 'low' | 'high';
 
-/** بيان القدرات. الحساسية هنا وهنا فقط. */
+/** The capability manifest. Sensitivity lives here and nowhere else. */
 export const TOOL_MANIFEST = {
   list_assistants: { sensitivity: 'low' },
   create_assistant: { sensitivity: 'low' },
@@ -33,17 +34,17 @@ export function sensitivityOf(tool: ToolName): Sensitivity {
   return TOOL_MANIFEST[tool].sensitivity;
 }
 
-/** مدة صلاحية الموافقة بعد منحها. قصيرة عمدًا: الموافقة معاصرة للفعل. */
+/** How long a consent lives once granted. Short on purpose: consent is contemporaneous. */
 export const CONSENT_TTL_MS = 120_000;
 
-/** الرد الموحّد عند غياب الموافقة. الوكيل يقرأه ويفهم أن عليه الانتظار. */
+/** The single refusal code. The agent reads it and understands it must wait. */
 export const REFUSAL = 'CONSENT_REQUIRED';
 
 /* ------------------------------------------------------------------ */
-/* تجزئة الفعل                                                          */
+/* Action fingerprinting                                               */
 /* ------------------------------------------------------------------ */
 
-/** JSON بترتيب مفاتيح ثابت، حتى تُنتج الوسائط نفسها التجزئة نفسها دائمًا. */
+/** JSON with a stable key order, so identical arguments always hash identically. */
 export function canonicalize(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
   if (Array.isArray(value)) return '[' + value.map(canonicalize).join(',') + ']';
@@ -53,8 +54,9 @@ export function canonicalize(value: unknown): string {
 }
 
 /**
- * يربط الموافقة بالفعل تحديدًا: اسم الأداة + الوسائط بالضبط.
- * SHA-256 عبر WebCrypto — لا تجزئة بدائية، حتى لا يكون التصادم مسارَ التفاف.
+ * Binds a consent to one exact action: the tool name plus the exact arguments.
+ * SHA-256 through WebCrypto rather than a cheap hash, so a collision is not a
+ * way around the gate.
  */
 export async function actionHash(tool: ToolName, args: unknown): Promise<string> {
   const payload = `${tool}\u0000${canonicalize(args ?? {})}`;
@@ -66,7 +68,7 @@ export async function actionHash(tool: ToolName, args: unknown): Promise<string>
 }
 
 /* ------------------------------------------------------------------ */
-/* واجهة البوابة                                                        */
+/* The gate interface                                                  */
 /* ------------------------------------------------------------------ */
 
 export type ConsentStatus = 'pending' | 'granted' | 'denied' | 'consumed' | 'expired';
@@ -75,7 +77,7 @@ export interface ConsentEntry {
   id: string;
   tool: ToolName;
   hash: string;
-  /** نص يقرؤه المستخدم، تصوغه واجهة التطبيق من الوسائط — لا يصوغه النموذج. */
+  /** Text the user reads, composed by the app from the arguments - never by the model. */
   summary: string;
   requestedAt: number;
   decidedAt?: number;
@@ -83,19 +85,19 @@ export interface ConsentEntry {
 }
 
 export interface ConsentGate {
-  /** يفتح طلب تأكيد للمستخدم. لا يمنح شيئًا. */
+  /** Opens a confirmation request for the user. Grants nothing. */
   request(tool: ToolName, hash: string, summary: string): string;
-  /** يُستدعى من نقرة المستخدم في الواجهة فقط. غير مكشوف كأداة أبدًا. */
+  /** Called only from a user click in the interface. Never exposed as a tool. */
   grant(id: string): void;
   deny(id: string): void;
-  /** يستهلك موافقة مطابقة للأداة والتجزئة معًا. مرة واحدة. */
+  /** Consumes a consent matching both the tool and the hash. Once. */
   consume(tool: ToolName, hash: string): boolean;
   entries(): ReadonlyArray<ConsentEntry>;
   subscribe(fn: () => void): () => void;
 }
 
 /* ------------------------------------------------------------------ */
-/* الغلاف الحارس                                                        */
+/* The guard wrapper                                                   */
 /* ------------------------------------------------------------------ */
 
 export interface ToolCallRecord {
@@ -109,19 +111,21 @@ export type ToolExecute<A = any> = (args: A, ctx: { signal?: AbortSignal }) => P
 
 export interface GuardOptions {
   gate: ConsentGate;
-  /** يصوغ نص التأكيد من الوسائط. يعيش في التطبيق، لا في النموذج. */
+  /** Composes the confirmation text from the arguments. Lives in the app, not the model. */
   summarize: (tool: ToolName, args: any) => string;
-  /** للوحة العرض. اختياري. */
+  /** For the display panel. Optional. */
   onCall?: (record: ToolCallRecord) => void;
 }
 
 /**
- * كل أداة تمرّ من هنا بلا استثناء.
+ * Every tool passes through here, without exception.
  *
- * الأدوات منخفضة الحساسية تمرّ مباشرة. الحسّاسة تسقط مغلقةً (fail-closed):
- * إن لم توجد موافقة مطابقة للأداة والوسائط، لا يُنفَّذ شيء ويُعرض طلب على المستخدم.
+ * Low-sensitivity tools go straight through. Sensitive ones fail closed: with no
+ * consent matching both the tool and the arguments, nothing executes and a
+ * request is surfaced to the user instead.
  *
- * ملاحظة: الحساسية تُقرأ من TOOL_MANIFEST لا من args ولا من أي شيء يمرره الوكيل.
+ * Note: sensitivity is read from TOOL_MANIFEST, never from args and never from
+ * anything the agent passes in.
  */
 export function guarded<A>(
   name: ToolName,
@@ -140,10 +144,10 @@ export function guarded<A>(
       opts.gate.request(name, hash, opts.summarize(name, args));
       opts.onCall?.({ tool: name, at: Date.now(), outcome: 'blocked', hash });
       return (
-        `${REFUSAL}: هذا الفعل يحتاج تأكيد المستخدم. ` +
-        `عُرض عليه الآن طلب تأكيد داخل الصفحة. ` +
-        `انتظر ردّه ثم أعد الاستدعاء بالوسائط نفسها تمامًا. ` +
-        `لا يمكنك منح هذه الموافقة بنفسك.`
+        `${REFUSAL}: this action needs the user's confirmation. ` +
+        `A confirmation dialog is now open in the page. ` +
+        `Wait for their answer, then call again with exactly the same arguments. ` +
+        `You cannot grant this consent yourself.`
       );
     }
 

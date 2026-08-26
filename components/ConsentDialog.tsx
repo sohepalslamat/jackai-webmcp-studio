@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { useConsent } from '../lib/consent/ConsentProvider';
-import { useT } from '../lib/i18n';
 
 /**
  * The confirmation dialog.
@@ -16,7 +15,6 @@ import { useT } from '../lib/i18n';
  */
 export function ConsentDialog() {
   const { gate, pending } = useConsent();
-  const { t } = useT();
   const confirmRef = useRef<HTMLButtonElement>(null);
   const denyRef = useRef<HTMLButtonElement>(null);
 
@@ -68,7 +66,7 @@ export function ConsentDialog() {
     >
       <div className="w-full max-w-md rounded-xl border border-slate-300 bg-white p-6 shadow-2xl">
         <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-          {t('dialog.title')}
+          This action needs your confirmation
         </p>
 
         <h2 id="consent-title" className="mt-2 text-lg font-semibold text-slate-900">
@@ -76,7 +74,7 @@ export function ConsentDialog() {
         </h2>
 
         <p id="consent-body" className="mt-3 text-sm leading-relaxed text-slate-700">
-          {t('dialog.body')}
+          Your agent asked to run the action below. Nothing happens until you confirm.
         </p>
 
         <dl className="mt-4 rounded-lg bg-slate-100 p-3 font-mono text-xs text-slate-700">
@@ -85,7 +83,7 @@ export function ConsentDialog() {
             <dd className="text-slate-900">{pending.tool}</dd>
           </div>
           <div className="mt-1 flex justify-between gap-4">
-            <dt>{t('dialog.fingerprint')}</dt>
+            <dt>fingerprint</dt>
             <dd className="truncate text-slate-900" title={pending.hash}>
               {pending.hash.slice(0, 16)}…
             </dd>
@@ -98,14 +96,14 @@ export function ConsentDialog() {
             onClick={() => gate.grant(pending.id)}
             className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
           >
-            {t('dialog.confirm')}
+            Confirm
           </button>
           <button
             ref={denyRef}
             onClick={() => gate.deny(pending.id)}
             className="flex-1 rounded-lg border border-slate-400 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
           >
-            {t('dialog.deny')}
+            Deny
           </button>
         </div>
       </div>

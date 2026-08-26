@@ -10,7 +10,13 @@
  * A hard reload is a fresh studio, and that is intentional.
  */
 
-export type Tone = 'رسمي' | 'ودّي' | 'مختصر';
+/**
+ * Tone values are canonically English because they cross the tool boundary:
+ * an agent told "make it formal" should be able to send exactly that. The
+ * interface renders them in the reader's language; the stored value never
+ * changes with the display language.
+ */
+export type Tone = 'formal' | 'friendly' | 'brief';
 export type Language = 'ar' | 'en' | 'tr';
 
 export interface ChatTurn {
@@ -41,7 +47,7 @@ export interface AssistantSummary {
   published: boolean;
 }
 
-const TONES: readonly Tone[] = ['رسمي', 'ودّي', 'مختصر'];
+const TONES: readonly Tone[] = ['formal', 'friendly', 'brief'];
 const LANGUAGES: readonly Language[] = ['ar', 'en', 'tr'];
 
 /** Simulated round-trip time for a test message, so the UI shows real pending state. */
@@ -59,8 +65,9 @@ export class StudioError extends Error {
 /* ------------------------------------------------------------------ */
 
 /**
- * Strips Arabic diacritics and normalises letter variants so that "أحمد"
- * and "احمد" score as the same token.
+ * Folds case and strips Arabic diacritics and letter variants, so that tokens
+ * match regardless of how they were typed. Knowledge is user content and may be
+ * in any language, even though the interface itself is English.
  */
 function normalize(text: string): string {
   return text
@@ -121,8 +128,8 @@ function composeReply(assistant: Assistant, message: string): string {
 
   if (!snippet) {
     const miss: Record<Language, string> = {
-      ar: `لا أجد هذا في معرفتي بعد. أضف نصًّا عن «${truncate(message, 60)}» إلى قاعدة المعرفة وسأعرف الإجابة.`,
       en: `I don't have this in my knowledge yet. Add a note about "${truncate(message, 60)}" to the knowledge base and I'll know it.`,
+      ar: `لا أجد هذا في معرفتي بعد. أضف نصًّا عن «${truncate(message, 60)}» إلى قاعدة المعرفة وسأعرف الإجابة.`,
       tr: `Bu henüz bilgimde yok. Bilgi tabanına "${truncate(message, 60)}" hakkında bir not ekleyin, öğreneyim.`,
     };
     return miss[language];
@@ -132,31 +139,31 @@ function composeReply(assistant: Assistant, message: string): string {
 
   const templates: Record<Language, Record<Tone, string>> = {
     ar: {
-      'رسمي': `شكرًا لتواصلكم. بحسب ما لدينا: ${body}\nنبقى في خدمتكم.`,
-      'ودّي': `أهلًا! ${body}\nتحبّ تعرف شي ثاني؟`,
-      'مختصر': body,
+      formal: `شكرًا لتواصلكم. بحسب ما لدينا: ${body}\nنبقى في خدمتكم.`,
+      friendly: `أهلًا! ${body}\nتحبّ تعرف شي ثاني؟`,
+      brief: body,
     },
     en: {
-      'رسمي': `Thank you for reaching out. According to our records: ${body}\nAt your service.`,
-      'ودّي': `Hey! ${body}\nAnything else you'd like to know?`,
-      'مختصر': body,
+      formal: `Thank you for reaching out. According to our records: ${body}\nAt your service.`,
+      friendly: `Hey! ${body}\nAnything else you'd like to know?`,
+      brief: body,
     },
     tr: {
-      'رسمي': `İlginiz için teşekkürler. Kayıtlarımıza göre: ${body}\nHizmetinizdeyiz.`,
-      'ودّي': `Merhaba! ${body}\nBaşka bir şey öğrenmek ister misiniz?`,
-      'مختصر': body,
+      formal: `İlginiz için teşekkürler. Kayıtlarımıza göre: ${body}\nHizmetinizdeyiz.`,
+      friendly: `Merhaba! ${body}\nBaşka bir şey öğrenmek ister misiniz?`,
+      brief: body,
     },
   };
 
   const reply = templates[language][tone];
-  return assistant.tone === 'مختصر' ? reply : `${reply}\n— ${name}`;
+  return assistant.tone === 'brief' ? reply : `${reply}\n— ${name}`;
 }
 
 /** A delay that actually honours cancellation, so the tool's AbortSignal means something. */
 function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      reject(new StudioError('أُلغيت التجربة قبل أن تكتمل.'));
+      reject(new StudioError('The test was cancelled before it finished.'));
       return;
     }
     const timer = setTimeout(() => {
@@ -165,7 +172,7 @@ function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
     }, ms);
     function onAbort() {
       clearTimeout(timer);
-      reject(new StudioError('أُلغيت التجربة قبل أن تكتمل.'));
+      reject(new StudioError('The test was cancelled before it finished.'));
     }
     signal?.addEventListener('abort', onAbort, { once: true });
   });
@@ -205,7 +212,7 @@ export class StudioStore {
     const found = this.assistants.find((a) => a.id === id);
     if (!found) {
       throw new StudioError(
-        `لا يوجد مساعد بالمعرّف «${id}». اعرض قائمة المساعدين أولًا للحصول على المعرّفات الصحيحة.`,
+        `No assistant with id "${id}". List the assistants first to get valid ids.`,
       );
     }
     return found;
@@ -250,13 +257,14 @@ export class StudioStore {
     const name = input.name?.trim();
     const purpose = input.purpose?.trim();
 
-    if (!name) throw new StudioError('المساعد يحتاج اسمًا. اكتب اسمًا يراه العميل.');
-    if (!purpose) throw new StudioError('المساعد يحتاج غرضًا بجملة واحدة تصف ما يفعله.');
+    if (!name) throw new StudioError('An assistant needs a name. Write one the customer will see.');
+    if (!purpose)
+      throw new StudioError('An assistant needs a purpose: one sentence describing what it does.');
 
-    const tone = TONES.includes(input.tone as Tone) ? (input.tone as Tone) : 'ودّي';
+    const tone = TONES.includes(input.tone as Tone) ? (input.tone as Tone) : 'friendly';
     const language = LANGUAGES.includes(input.language as Language)
       ? (input.language as Language)
-      : 'ar';
+      : 'en';
 
     const assistant: Assistant = {
       id: this.nextId(name),
@@ -281,7 +289,7 @@ export class StudioStore {
     const assistant = this.find(id);
     const clean = text?.trim();
     if (!clean) {
-      throw new StudioError('النصّ فارغ. الصق مقطعًا يعرف المساعد من خلاله شيئًا جديدًا.');
+      throw new StudioError('The text is empty. Paste a snippet the assistant should know.');
     }
     assistant.knowledge = [...assistant.knowledge, clean];
     this.commit();
@@ -291,7 +299,7 @@ export class StudioStore {
   test = async (id: string, message: string, signal?: AbortSignal): Promise<string> => {
     const assistant = this.find(id);
     const clean = message?.trim();
-    if (!clean) throw new StudioError('اكتب رسالة لتجربة المساعد بها.');
+    if (!clean) throw new StudioError('Write a message to test the assistant with.');
 
     assistant.chat = [...assistant.chat, { role: 'user', text: clean, at: Date.now() }];
     this.commit();
@@ -308,7 +316,7 @@ export class StudioStore {
   publish = (id: string, channel: string): void => {
     const assistant = this.find(id);
     const clean = channel?.trim();
-    if (!clean) throw new StudioError('اختر القناة التي يُنشر عليها المساعد.');
+    if (!clean) throw new StudioError('Choose the channel to publish the assistant on.');
 
     assistant.published = true;
     if (!assistant.channels.includes(clean)) {
@@ -321,7 +329,7 @@ export class StudioStore {
     const assistant = this.find(id);
     const clean = email?.trim();
     if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
-      throw new StudioError('البريد غير صالح. اكتب بريدًا بالصيغة name@example.com.');
+      throw new StudioError('That email is not valid. Use the form name@example.com.');
     }
     if (!assistant.sharedWith.includes(clean)) {
       assistant.sharedWith = [...assistant.sharedWith, clean];

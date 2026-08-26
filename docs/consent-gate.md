@@ -141,7 +141,7 @@ The dialog text is composed by the application from the arguments:
 
 ```ts
 case 'publish_assistant':
-  return `نشر «${nameOf(args?.id)}» على قناة ${args?.channel ?? '—'}`;
+  return `Publish "${nameOf(args?.id)}" to the ${args?.channel ?? '—'} channel`;
 ```
 
 Never by the model. Otherwise an agent could describe one action while a
@@ -157,10 +157,10 @@ The four from §7.4, in `lib/consent/ledger.test.ts`:
 
 | # | Invariant | Test |
 |---|---|---|
-| 1 | Sensitive action without consent is dropped | `فعل حسّاس بلا موافقة يُسقَط` |
-| 2 | Same action with matching consent executes | `الفعل نفسه بموافقة مطابقة يمرّ` |
-| 3 | Consent does not transfer to another action | `موافقة على فعل لا تمرّر فعلًا آخر` |
-| 4 | A consumed consent does not replay | `الرمز المستهلَك لا يُعاد استعماله` |
+| 1 | Sensitive action without consent is dropped | `a sensitive action without consent is dropped` |
+| 2 | Same action with matching consent executes | `the same action with matching consent passes` |
+| 3 | Consent does not transfer to another action | `consent for one action does not pass another` |
+| 4 | A consumed consent does not replay | `a consumed token is not replayed` |
 
 Ten more in `lib/consent/adversarial.test.ts` assume an actively hostile model:
 

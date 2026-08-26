@@ -37,9 +37,9 @@ The agent does not replace the interface. It shares it. Every screen still works
 by hand, and a person who ignores the agent entirely loses nothing.
 
 At the boundary the experience inverts on purpose. When the agent asks to
-publish, the studio stops and shows you the exact action in your own language —
-"نشر «Cafe Bot» على قناة whatsapp" — composed by the application from the
-arguments, never phrased by the model. The friction is the feature, and it
+publish, the studio stops and shows you the exact action in plain words —
+`Publish "Cafe Bot" to the whatsapp channel` — composed by the application from
+the arguments, never phrased by the model. The friction is the feature, and it
 appears at precisely three places out of seven.
 
 ## 3. What is now possible that was not before

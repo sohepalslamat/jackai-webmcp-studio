@@ -3,11 +3,12 @@ import { ConsentLedger } from './ledger';
 import { actionHash, guarded, REFUSAL, CONSENT_TTL_MS } from '../contracts';
 
 /**
- * اختبارات القبول الأربعة.
+ * The four acceptance tests.
  *
- * هذه هي الثوابت نفسها التي تختبرها الورقة (§7.4) على الحارس الحتمي.
- * النموذج هنا معادٍ: يحاول التنفيذ بلا موافقة، ويحاول تمرير موافقة فعل لفعل آخر،
- * ويحاول إعادة استعمال رمز مستهلَك.
+ * These are the same invariants the paper tests against the deterministic guard
+ * (SS7.4). The model here is adversarial: it tries to execute without consent,
+ * tries to carry one action's consent to another, and tries to replay a
+ * consumed token.
  */
 
 let gate: ConsentLedger;
@@ -26,7 +27,7 @@ function tool(name: Parameters<typeof guarded>[0]) {
   );
 }
 
-/** يحاكي المستخدم وهو ينقر "تأكيد" في الواجهة. */
+/** Simulates the user clicking "Confirm" in the interface. */
 function userApprovesPending() {
   const p = gate.entries().find((e) => e.status === 'pending');
   if (!p) throw new Error('no pending consent to approve');
@@ -39,8 +40,8 @@ beforeEach(() => {
   executed = [];
 });
 
-describe('البوابة الحتمية', () => {
-  it('1. فعل حسّاس بلا موافقة يُسقَط', async () => {
+describe('the deterministic gate', () => {
+  it('1. a sensitive action without consent is dropped', async () => {
     const publish = tool('publish_assistant');
 
     const res = await publish({ id: 'a1' }, {});
@@ -50,10 +51,10 @@ describe('البوابة الحتمية', () => {
     expect(gate.entries()[0].status).toBe('pending');
   });
 
-  it('2. الفعل نفسه بموافقة مطابقة يمرّ', async () => {
+  it('2. the same action with matching consent passes', async () => {
     const publish = tool('publish_assistant');
 
-    await publish({ id: 'a1' }, {}); // يفتح الطلب
+    await publish({ id: 'a1' }, {}); // opens the request
     userApprovesPending();
     const res = await publish({ id: 'a1' }, {});
 
@@ -61,25 +62,25 @@ describe('البوابة الحتمية', () => {
     expect(executed).toEqual(['publish_assistant:{"id":"a1"}']);
   });
 
-  it('3. موافقة على فعل لا تمرّر فعلًا آخر', async () => {
+  it('3. consent for one action does not pass another', async () => {
     const publish = tool('publish_assistant');
     const remove = tool('delete_assistant');
 
     await publish({ id: 'a1' }, {});
-    userApprovesPending(); // المستخدم وافق على النشر فقط
+    userApprovesPending(); // the user approved publishing only
 
-    // (أ) أداة أخرى بالوسائط نفسها
+    // (a) a different tool with the same arguments
     const r1 = await remove({ id: 'a1' }, {});
     expect(r1).toContain(REFUSAL);
 
-    // (ب) الأداة نفسها بوسائط أخرى
+    // (b) the same tool with different arguments
     const r2 = await publish({ id: 'a2' }, {});
     expect(r2).toContain(REFUSAL);
 
     expect(executed).toEqual([]);
   });
 
-  it('4. الرمز المستهلَك لا يُعاد استعماله', async () => {
+  it('4. a consumed token is not replayed', async () => {
     const publish = tool('publish_assistant');
 
     await publish({ id: 'a1' }, {});
@@ -94,15 +95,15 @@ describe('البوابة الحتمية', () => {
   });
 });
 
-describe('تفاصيل مساندة', () => {
-  it('الأدوات منخفضة الحساسية تمرّ بلا بوابة', async () => {
+describe('supporting details', () => {
+  it('low-sensitivity tools pass without the gate', async () => {
     const list = tool('list_assistants');
     const res = await list({}, {});
     expect(res).toBe('OK');
     expect(gate.entries()).toHaveLength(0);
   });
 
-  it('الموافقة تنتهي بعد المهلة', async () => {
+  it('consent expires after the TTL', async () => {
     vi.useFakeTimers();
     const publish = tool('publish_assistant');
 
@@ -117,13 +118,13 @@ describe('تفاصيل مساندة', () => {
     vi.useRealTimers();
   });
 
-  it('ترتيب مفاتيح الوسائط لا يغيّر التجزئة', async () => {
+  it('argument key order does not change the hash', async () => {
     const a = await actionHash('publish_assistant', { id: 'a1', channel: 'web' });
     const b = await actionHash('publish_assistant', { channel: 'web', id: 'a1' });
     expect(a).toBe(b);
   });
 
-  it('لا توجد أداة تمنح موافقة', async () => {
+  it('no tool grants consent', async () => {
     const { TOOL_NAMES } = await import('../contracts');
     for (const n of TOOL_NAMES) {
       expect(n).not.toMatch(/consent|approve|grant|confirm/i);

@@ -1,4 +1,4 @@
-# Assistant Studio — استوديو المساعدين
+# Assistant Studio
 
 An assistant-building studio where a person and their agent work on the same
 surface. Every sensitive action is governed by a deterministic consent gate
@@ -29,8 +29,8 @@ agent's say-so.
 An agent calls `publish_assistant`. The guard reads the tool's sensitivity from
 a build-time manifest, fingerprints the exact arguments with SHA-256, and looks
 for a matching consent. There isn't one, so nothing runs: the call returns a
-refusal and a dialog opens in the page showing the person what was asked, in
-their language, composed by the application rather than by the model. If they
+refusal and a dialog opens in the page showing the person exactly what was
+asked, composed by the application rather than by the model. If they
 click confirm, a consent is recorded against that tool and that fingerprint. The
 agent calls again with identical arguments and it executes — once. The same
 consent will not carry a different channel, a different assistant, a different
@@ -120,9 +120,9 @@ browser that implements WebMCP:
 Then try, in order:
 
 1. *"List my assistants"* — works immediately.
-2. *"Build me an assistant for a restaurant that replies in Arabic"* — created,
-   knowledge added, tested, without you touching the mouse. Watch the panel:
-   three more tools appear the moment the assistant exists.
+2. *"Build me a formal assistant for a restaurant"* — created, knowledge added,
+   tested, without you touching the mouse. Watch the panel: three more tools
+   appear the moment the assistant exists.
 3. *"Publish it to WhatsApp"* — **refused.** The panel highlights the blocked
    call and a dialog opens. Click confirm and ask again: it publishes.
 4. *"Now delete the other assistant"* — refused. The consent you just gave does

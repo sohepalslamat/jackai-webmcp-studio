@@ -49,14 +49,14 @@ export interface RegisterOptions {
 /** The confirmation text the user reads. Composed by the app from the arguments, never by the model. */
 function summarize(store: Store) {
   return (tool: ToolName, args: any): string => {
-    const nameOf = (id: string) => store.get(id)?.name ?? `مساعد غير معروف (${id})`;
+    const nameOf = (id: string) => store.get(id)?.name ?? `unknown assistant (${id})`;
     switch (tool) {
       case 'publish_assistant':
-        return `نشر «${nameOf(args?.id)}» على قناة ${args?.channel ?? '—'}`;
+        return `Publish "${nameOf(args?.id)}" to the ${args?.channel ?? '—'} channel`;
       case 'share_assistant':
-        return `مشاركة «${nameOf(args?.id)}» مع ${args?.email ?? '—'}`;
+        return `Share "${nameOf(args?.id)}" with ${args?.email ?? '—'}`;
       case 'delete_assistant':
-        return `حذف «${nameOf(args?.id)}» نهائيًا`;
+        return `Delete "${nameOf(args?.id)}" permanently`;
       default:
         return tool;
     }
@@ -74,7 +74,7 @@ type Guard = {
  * letting it surface as an opaque tool failure.
  */
 function explain(e: unknown): string {
-  return e instanceof Error ? e.message : 'تعذّر تنفيذ الفعل.';
+  return e instanceof Error ? e.message : 'The action could not be completed.';
 }
 
 /* ------------------------------------------------------------------ */
@@ -93,7 +93,8 @@ async function registerLowTools(
   await mc.registerTool(
     {
       name: 'list_assistants',
-      description: 'اعرض المساعدين الموجودين في الاستوديو مع حالة النشر لكل منهم.',
+      description:
+        'List the assistants in the studio with the publish state of each one.',
       inputSchema: { type: 'object', properties: {} },
       annotations: { readOnlyHint: true },
       execute: wrap('list_assistants', async () => JSON.stringify(store.list())),
@@ -105,21 +106,36 @@ async function registerLowTools(
     {
       name: 'create_assistant',
       description:
-        'أنشئ مساعدًا جديدًا. يبقى مسودّة غير منشورة حتى ينشره المستخدم صراحةً.',
+        'Create a new assistant. It stays an unpublished draft until the user ' +
+        'publishes it explicitly.',
       inputSchema: {
         type: 'object',
         properties: {
-          name: { type: 'string', description: 'اسم المساعد كما يراه العميل' },
-          purpose: { type: 'string', description: 'ما الذي يفعله بجملة واحدة' },
-          tone: { type: 'string', enum: ['رسمي', 'ودّي', 'مختصر'] },
-          language: { type: 'string', enum: ['ar', 'en', 'tr'] },
+          name: {
+            type: 'string',
+            description: 'The assistant name as the customer sees it',
+          },
+          purpose: {
+            type: 'string',
+            description: 'What it does, in one sentence',
+          },
+          tone: {
+            type: 'string',
+            enum: ['formal', 'friendly', 'brief'],
+            description: 'How the assistant speaks. Defaults to friendly.',
+          },
+          language: {
+            type: 'string',
+            enum: ['ar', 'en', 'tr'],
+            description: 'The language the assistant replies in. Defaults to ar.',
+          },
         },
         required: ['name', 'purpose'],
       },
       execute: wrap('create_assistant', async (a) => {
         try {
           const id = store.create(a);
-          return `أُنشئ المساعد بمعرّف ${id}. لم يُنشر بعد.`;
+          return `Created assistant with id ${id}. Not published yet.`;
         } catch (e) {
           return explain(e);
         }
@@ -131,12 +147,12 @@ async function registerLowTools(
   await mc.registerTool(
     {
       name: 'add_knowledge',
-      description: 'أضف نصًّا إلى قاعدة معرفة مساعد قائم.',
+      description: 'Append a snippet of text to an existing assistant\'s knowledge base.',
       inputSchema: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
-          text: { type: 'string' },
+          id: { type: 'string', description: 'The assistant id, from list_assistants' },
+          text: { type: 'string', description: 'The text the assistant should know' },
         },
         required: ['id', 'text'],
       },
@@ -144,7 +160,7 @@ async function registerLowTools(
       execute: wrap('add_knowledge', async (a) => {
         try {
           const n = store.addKnowledge(a.id, a.text);
-          return `صار عدد مقاطع المعرفة ${n}.`;
+          return `The knowledge base now has ${n} snippet(s).`;
         } catch (e) {
           return explain(e);
         }
@@ -156,10 +172,14 @@ async function registerLowTools(
   await mc.registerTool(
     {
       name: 'test_assistant',
-      description: 'جرّب المساعد برسالة واحدة واحصل على ردّه. لا يُغيّر شيئًا.',
+      description:
+        'Send one test message to an assistant and get its reply. Changes nothing.',
       inputSchema: {
         type: 'object',
-        properties: { id: { type: 'string' }, message: { type: 'string' } },
+        properties: {
+          id: { type: 'string', description: 'The assistant id, from list_assistants' },
+          message: { type: 'string', description: 'The message to send, as a customer would' },
+        },
         required: ['id', 'message'],
       },
       annotations: { readOnlyHint: true, untrustedContentHint: true },
@@ -194,11 +214,12 @@ async function registerHighTools(
     {
       name: 'publish_assistant',
       description:
-        'انشر المساعد على قناة حيّة. فعل حسّاس: يحتاج تأكيد المستخدم داخل الصفحة.',
+        'Publish an assistant to a live channel. Sensitive: requires the user to ' +
+        'confirm inside the page before it runs.',
       inputSchema: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
+          id: { type: 'string', description: 'The assistant id, from list_assistants' },
           channel: { type: 'string', enum: ['web', 'whatsapp', 'api'] },
         },
         required: ['id', 'channel'],
@@ -207,7 +228,7 @@ async function registerHighTools(
       execute: wrap('publish_assistant', async (a) => {
         try {
           store.publish(a.id, a.channel);
-          return `نُشر على ${a.channel}.`;
+          return `Published to ${a.channel}.`;
         } catch (e) {
           return explain(e);
         }
@@ -220,16 +241,20 @@ async function registerHighTools(
     {
       name: 'share_assistant',
       description:
-        'شارك المساعد مع شخص عبر بريده. فعل حسّاس: يحتاج تأكيد المستخدم داخل الصفحة.',
+        'Share an assistant with a person by email. Sensitive: requires the user ' +
+        'to confirm inside the page before it runs.',
       inputSchema: {
         type: 'object',
-        properties: { id: { type: 'string' }, email: { type: 'string' } },
+        properties: {
+          id: { type: 'string', description: 'The assistant id, from list_assistants' },
+          email: { type: 'string', description: 'The recipient email address' },
+        },
         required: ['id', 'email'],
       },
       execute: wrap('share_assistant', async (a) => {
         try {
           store.share(a.id, a.email);
-          return `أُرسلت دعوة إلى ${a.email}.`;
+          return `An invitation was sent to ${a.email}.`;
         } catch (e) {
           return explain(e);
         }
@@ -241,16 +266,20 @@ async function registerHighTools(
   await mc.registerTool(
     {
       name: 'delete_assistant',
-      description: 'احذف مساعدًا نهائيًا. فعل حسّاس: يحتاج تأكيد المستخدم داخل الصفحة.',
+      description:
+        'Delete an assistant permanently. Sensitive: requires the user to confirm ' +
+        'inside the page before it runs. This cannot be undone.',
       inputSchema: {
         type: 'object',
-        properties: { id: { type: 'string' } },
+        properties: {
+          id: { type: 'string', description: 'The assistant id, from list_assistants' },
+        },
         required: ['id'],
       },
       execute: wrap('delete_assistant', async (a) => {
         try {
           store.remove(a.id);
-          return 'حُذف.';
+          return 'Deleted.';
         } catch (e) {
           return explain(e);
         }

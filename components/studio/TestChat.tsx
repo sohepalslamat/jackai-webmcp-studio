@@ -2,14 +2,12 @@
 
 import { useState } from 'react';
 import { store, type Assistant } from '../../lib/store';
-import { useT } from '../../lib/i18n';
 
 /**
  * The test box. Calls store.test directly: this is the human path, and the
  * human is present by their own click.
  */
 export function TestChat({ assistant }: { assistant: Assistant }) {
-  const { t } = useT();
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +22,7 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
     try {
       await store.test(assistant.id, sent);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error.generic'));
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setBusy(false);
     }
@@ -32,11 +30,13 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h3 className="font-medium text-slate-900">{t('assistant.test')}</h3>
+      <h3 className="font-medium text-slate-900">Test the assistant</h3>
 
       <div className="mt-3 space-y-2">
         {assistant.chat.length === 0 && !busy && (
-          <p className="text-sm text-slate-500">{t('assistant.test_empty')}</p>
+          <p className="text-sm text-slate-500">
+            You haven&apos;t tested it yet. Ask it something it knows.
+          </p>
         )}
 
         {assistant.chat.map((turn, i) => (
@@ -54,7 +54,7 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
 
         {busy && (
           <div className="me-auto rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-500">
-            {t('assistant.test_thinking')}
+            Typing…
           </div>
         )}
       </div>
@@ -69,7 +69,7 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder={t('assistant.test_placeholder')}
+          placeholder="Write a message as if you were a customer…"
           className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
         />
         <button
@@ -77,7 +77,7 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
           disabled={busy || !message.trim()}
           className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
-          {t('assistant.test_send')}
+          Send
         </button>
       </form>
     </section>

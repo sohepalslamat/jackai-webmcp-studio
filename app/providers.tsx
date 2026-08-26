@@ -6,7 +6,6 @@ import { ConsentProvider } from '../lib/consent/ConsentProvider';
 import { ConsentDialog } from '../components/ConsentDialog';
 import { AgentPanel } from '../components/AgentPanel';
 import { ToolsHost } from '../lib/tools/ToolsHost';
-import { LangProvider, useT } from '../lib/i18n';
 
 /**
  * Everything stateful mounts here, in the layout rather than in a page, so the
@@ -15,24 +14,21 @@ import { LangProvider, useT } from '../lib/i18n';
  */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <LangProvider>
-      <ConsentProvider>
-        <ToolsHost />
-        <Shell>{children}</Shell>
-        <ConsentDialog />
-      </ConsentProvider>
-    </LangProvider>
+    <ConsentProvider>
+      <ToolsHost />
+      <Shell>{children}</Shell>
+      <ConsentDialog />
+    </ConsentProvider>
   );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { t, toggle } = useT();
   const [panelOpen, setPanelOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* The agent panel is fixed on the inline-start side in wide viewports and
-          a collapsible drawer on mobile. */}
+      {/* The agent panel is fixed on the left in wide viewports and a
+          collapsible drawer on mobile. */}
       <div
         className={`${
           panelOpen ? 'block' : 'hidden'
@@ -48,24 +44,19 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex w-full max-w-3xl items-center gap-4 px-5 py-4">
             <Link href="/" className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold text-slate-900">
-                {t('app.title')}
+                Assistant Studio
               </h1>
-              <p className="truncate text-xs text-slate-500">{t('app.tagline')}</p>
+              <p className="truncate text-xs text-slate-500">
+                Build your assistant yourself, or ask your agent to build it with you.
+              </p>
             </Link>
 
             <button
               onClick={() => setPanelOpen((v) => !v)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 lg:hidden"
+              className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 lg:hidden"
               aria-expanded={panelOpen}
             >
-              {panelOpen ? t('panel.collapse') : t('panel.expand')}
-            </button>
-
-            <button
-              onClick={toggle}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
-            >
-              {t('lang.toggle')}
+              {panelOpen ? 'Hide panel' : 'Agent panel'}
             </button>
           </div>
         </header>

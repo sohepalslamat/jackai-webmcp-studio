@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { store, type Assistant } from '../../lib/store';
-import { useT } from '../../lib/i18n';
 
 /**
  * Publish, share and delete for the human.
@@ -14,7 +13,6 @@ import { useT } from '../../lib/i18n';
  * their own click would be theatre, not a guarantee.
  */
 export function DangerActions({ assistant }: { assistant: Assistant }) {
-  const { t } = useT();
   const router = useRouter();
 
   const [channel, setChannel] = useState('web');
@@ -27,21 +25,22 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
     try {
       fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error.generic'));
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     }
   };
 
   return (
     <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5">
-      <h3 className="font-medium text-slate-900">{t('assistant.actions')}</h3>
+      <h3 className="font-medium text-slate-900">Sensitive actions</h3>
       <p className="mt-1 text-xs leading-relaxed text-slate-600">
-        {t('assistant.actions_hint')}
+        These happen on your click directly. When your agent asks for them instead, they
+        pass through the consent gate.
       </p>
 
       {/* Publish */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <label htmlFor="channel" className="text-sm text-slate-700">
-          {t('assistant.publish_on')}
+          Publish on
         </label>
         <select
           id="channel"
@@ -57,13 +56,13 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
           onClick={() => run(() => store.publish(assistant.id, channel))}
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
         >
-          {t('assistant.publish')}
+          Publish
         </button>
       </div>
 
       {assistant.channels.length > 0 && (
         <p className="mt-2 text-xs text-emerald-800">
-          {t('assistant.published_on', { channels: assistant.channels.join('، ') })}
+          Published on: {assistant.channels.join(', ')}
         </p>
       )}
 
@@ -72,8 +71,7 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('assistant.share_placeholder')}
-          dir="ltr"
+          placeholder="name@example.com"
           className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
         />
         <button
@@ -85,13 +83,13 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
           }
           className="rounded-lg border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
         >
-          {t('assistant.share')}
+          Share
         </button>
       </div>
 
       {assistant.sharedWith.length > 0 && (
-        <p className="mt-2 text-xs text-slate-600" dir="ltr">
-          {t('assistant.shared_with', { emails: assistant.sharedWith.join(', ') })}
+        <p className="mt-2 text-xs text-slate-600">
+          Shared with: {assistant.sharedWith.join(', ')}
         </p>
       )}
 
@@ -108,11 +106,11 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
             onClick={() => setConfirmingDelete(true)}
             className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
           >
-            {t('assistant.delete')}
+            Delete
           </button>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-red-800">{t('assistant.delete_confirm')}</span>
+            <span className="text-sm text-red-800">Permanent deletion. Sure?</span>
             <button
               onClick={() => {
                 store.remove(assistant.id);
@@ -120,13 +118,13 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
               }}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
             >
-              {t('assistant.delete_yes')}
+              Yes, delete
             </button>
             <button
               onClick={() => setConfirmingDelete(false)}
               className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
-              {t('assistant.delete_no')}
+              Cancel
             </button>
           </div>
         )}

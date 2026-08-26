@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { store } from '../../lib/store';
-import { useT } from '../../lib/i18n';
+import type { Tone, Language } from '../../lib/store';
 
 /**
  * Emptiness is an invitation to act, not an apology.
@@ -16,8 +16,8 @@ interface Template {
   icon: string;
   name: string;
   purpose: string;
-  tone: 'رسمي' | 'ودّي' | 'مختصر';
-  language: 'ar' | 'en' | 'tr';
+  tone: Tone;
+  language: Language;
   knowledge: string[];
 }
 
@@ -25,46 +25,45 @@ const TEMPLATES: Template[] = [
   {
     key: 'support',
     icon: '🎧',
-    name: 'مساعد الدعم الفني',
-    purpose: 'يجيب أسئلة العملاء عن المنتج ويحلّ المشكلات الشائعة.',
-    tone: 'ودّي',
-    language: 'ar',
+    name: 'Support Assistant',
+    purpose: 'Answers customer questions about the product and resolves common issues.',
+    tone: 'friendly',
+    language: 'en',
     knowledge: [
-      'ساعات الدعم من الأحد إلى الخميس، التاسعة صباحًا حتى السادسة مساءً بتوقيت إسطنبول.',
-      'إعادة تعيين كلمة المرور: من صفحة الدخول اضغط «نسيت كلمة المرور» وسيصلك رابط خلال دقيقتين.',
-      'لا نطلب كلمة المرور في أي رسالة أو مكالمة. أي طلب كهذا محاولة احتيال.',
+      'Support hours are Sunday to Thursday, 9am to 6pm Istanbul time.',
+      'To reset a password, click "Forgot password" on the sign-in page. A link arrives within two minutes.',
+      'We never ask for your password in a message or a call. Any such request is a scam.',
     ],
   },
   {
     key: 'sales',
     icon: '💼',
-    name: 'مساعد المبيعات',
-    purpose: 'يشرح الباقات ويقارن بينها ويحجز مكالمة مع فريق المبيعات.',
-    tone: 'رسمي',
-    language: 'ar',
+    name: 'Sales Assistant',
+    purpose: 'Explains the plans, compares them, and books a call with the sales team.',
+    tone: 'formal',
+    language: 'en',
     knowledge: [
-      'الباقات ثلاث: المبتدئة 49 دولارًا شهريًا، والاحترافية 99، والأعمال 199.',
-      'الاشتراك السنوي يوفّر شهرين مجانًا على أي باقة.',
-      'التجربة المجانية أربعة عشر يومًا بلا بطاقة ائتمان.',
+      'There are three plans: Starter at $49 a month, Pro at $99, and Business at $199.',
+      'An annual subscription saves two months on any plan.',
+      'The free trial lasts fourteen days and needs no credit card.',
     ],
   },
   {
     key: 'booking',
     icon: '📅',
-    name: 'مساعد الحجوزات',
-    purpose: 'يعرض المواعيد المتاحة ويحجز ويؤكّد للعميل.',
-    tone: 'مختصر',
-    language: 'ar',
+    name: 'Booking Assistant',
+    purpose: 'Shows available slots, books them, and confirms with the customer.',
+    tone: 'brief',
+    language: 'en',
     knowledge: [
-      'المواعيد متاحة كل نصف ساعة من العاشرة صباحًا حتى الثامنة مساءً.',
-      'الإلغاء مجاني قبل الموعد بأربع وعشرين ساعة، وبعدها تُحتسب نصف القيمة.',
-      'الحجز الجماعي لأكثر من ستة أشخاص يحتاج تأكيدًا هاتفيًا.',
+      'Slots are available every half hour from 10am to 8pm.',
+      'Cancelling is free up to 24 hours before the appointment; after that half the fee applies.',
+      'Group bookings for more than six people need a phone confirmation.',
     ],
   },
 ];
 
 export function EmptyState() {
-  const { t } = useT();
   const router = useRouter();
 
   const useTemplate = (tpl: Template) => {
@@ -80,18 +79,20 @@ export function EmptyState() {
 
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">{t('empty.title')}</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">{t('empty.body')}</p>
+      <h2 className="text-lg font-semibold text-slate-900">No assistants yet</h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
+        Start from a template, or create one from scratch.
+      </p>
 
       <button
         onClick={() => router.push('/new')}
         className="mt-5 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
       >
-        {t('empty.create')}
+        Create an assistant
       </button>
 
       <p className="mt-8 text-xs font-medium uppercase tracking-wide text-slate-500">
-        {t('empty.templates')}
+        Or start here
       </p>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-3">

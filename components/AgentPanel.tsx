@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useConsent } from '../lib/consent/ConsentProvider';
 import { CONSENT_TTL_MS, sensitivityOf, TOOL_NAMES, type ToolName } from '../lib/contracts';
-import { useT, type TKey } from '../lib/i18n';
 
 /**
  * The side panel shows what is normally invisible: which tools exist right now,
@@ -15,7 +14,6 @@ import { useT, type TKey } from '../lib/i18n';
  */
 export function AgentPanel() {
   const { entries, calls } = useConsent();
-  const { t } = useT();
   const [registered, setRegistered] = useState<string[]>([]);
   const [, tick] = useState(0);
 
@@ -56,19 +54,19 @@ export function AgentPanel() {
   return (
     <aside className="flex h-full w-full flex-col gap-5 border-s border-slate-200 bg-white p-5">
       <header>
-        <h2 className="text-base font-semibold text-slate-900">{t('panel.title')}</h2>
+        <h2 className="text-base font-semibold text-slate-900">What your agent sees</h2>
         {!hasContext && (
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            {t('panel.tools_none')}
+            No tools registered. Open this page in a WebMCP-capable browser.
           </p>
         )}
       </header>
 
       {/* Registered tools */}
       <section>
-        <SectionTitle>{t('panel.tools')}</SectionTitle>
+        <SectionTitle>Tools available now</SectionTitle>
         {registered.length === 0 ? (
-          <Muted>{t('panel.tools_none')}</Muted>
+          <Muted>No tools registered. Open this page in a WebMCP-capable browser.</Muted>
         ) : (
           <ul className="mt-2 space-y-1.5">
             {registered.map((name) => {
@@ -78,7 +76,7 @@ export function AgentPanel() {
                   <code className="text-[13px] text-slate-800">{name}</code>
                   {high && (
                     <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">
-                      {t('panel.needs_consent')}
+                      Needs confirmation
                     </span>
                   )}
                 </li>
@@ -90,9 +88,9 @@ export function AgentPanel() {
 
       {/* Gate decisions */}
       <section>
-        <SectionTitle>{t('panel.decisions')}</SectionTitle>
+        <SectionTitle>Gate decisions</SectionTitle>
         {entries.length === 0 ? (
-          <Muted>{t('panel.decisions_none')}</Muted>
+          <Muted>No decisions yet.</Muted>
         ) : (
           <ol className="mt-2 space-y-2">
             {entries.slice(0, 5).map((e) => {
@@ -117,7 +115,7 @@ export function AgentPanel() {
                     // A live countdown is the clearest way to show that consent
                     // is contemporaneous, not permanent.
                     <p className="mt-1 text-[11px] font-medium text-emerald-800">
-                      {t('panel.expires_in', { s: secondsLeft })}
+                      Expires in {secondsLeft}s
                     </p>
                   )}
                 </li>
@@ -129,9 +127,9 @@ export function AgentPanel() {
 
       {/* Recent calls */}
       <section className="mt-auto">
-        <SectionTitle>{t('panel.calls')}</SectionTitle>
+        <SectionTitle>Recent calls</SectionTitle>
         {calls.length === 0 ? (
-          <Muted>{t('panel.calls_none')}</Muted>
+          <Muted>No calls yet.</Muted>
         ) : (
           <ul className="mt-2 space-y-1.5">
             {calls.slice(0, 8).map((c, i) => (
@@ -146,7 +144,7 @@ export function AgentPanel() {
 
 /**
  * A blocked call is the moment the whole project exists for, so it gets a
- * colour of its own, a one-shot pulse, and a sentence in the user's language.
+ * colour of its own, a one-shot pulse, and a sentence in plain words.
  * Never the raw refusal code.
  */
 function CallRow({
@@ -156,7 +154,6 @@ function CallRow({
   call: { tool: string; at: number; outcome: 'allowed' | 'blocked' };
   isLatest: boolean;
 }) {
-  const { t } = useT();
   const blocked = call.outcome === 'blocked';
 
   // Pulse only for a genuinely new blocked call, not on every re-render.
@@ -170,9 +167,7 @@ function CallRow({
     return (
       <li className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5">
         <code className="text-[13px] text-slate-700">{call.tool}</code>
-        <span className="shrink-0 text-xs font-medium text-emerald-800">
-          {t('panel.allowed')}
-        </span>
+        <span className="shrink-0 text-xs font-medium text-emerald-800">Executed</span>
       </li>
     );
   }
@@ -187,7 +182,7 @@ function CallRow({
         <code className="text-[13px] font-medium text-amber-950">{call.tool}</code>
       </div>
       <p className="mt-0.5 text-xs font-medium leading-relaxed text-amber-900">
-        {t('panel.blocked')}
+        Blocked: this action needs your confirmation
       </p>
     </li>
   );
@@ -203,8 +198,15 @@ function Muted({ children }: { children: React.ReactNode }) {
   return <p className="mt-2 text-xs leading-relaxed text-slate-500">{children}</p>;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Waiting for you',
+  granted: 'Confirmed',
+  consumed: 'Consumed',
+  denied: 'Denied',
+  expired: 'Expired',
+};
+
 function StatusTag({ status }: { status: string }) {
-  const { t } = useT();
   const styles: Record<string, string> = {
     pending: 'bg-amber-100 text-amber-900',
     granted: 'bg-emerald-100 text-emerald-900',
@@ -212,14 +214,13 @@ function StatusTag({ status }: { status: string }) {
     denied: 'bg-red-100 text-red-800',
     expired: 'bg-slate-200 text-slate-600',
   };
-  const key = `panel.status.${status}` as TKey;
   return (
     <span
       className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${
         styles[status] ?? 'bg-slate-200 text-slate-700'
       }`}
     >
-      {t(key)}
+      {STATUS_LABELS[status] ?? status}
     </span>
   );
 }

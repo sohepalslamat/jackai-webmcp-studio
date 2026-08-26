@@ -6,13 +6,14 @@ import {
 } from '../contracts';
 
 /**
- * سجلّ الموافقة.
+ * The consent ledger.
  *
- * قاعدتان تحملان كل شيء:
- *  1. لا يُكتب فيه إلا من نقرة المستخدم في واجهة التطبيق. لا توجد أداة تمنح موافقة.
- *  2. الموافقة مربوطة بـ(الأداة + تجزئة الوسائط) وتُستهلك مرة واحدة وتنتهي بمهلة.
+ * Two rules carry everything:
+ *  1. It is written only by a user click in the interface. No tool grants consent.
+ *  2. A consent is bound to (tool + argument hash), is consumed once, and expires.
  *
- * الحالة تعيش في الذاكرة فقط. لا localStorage: موافقة اليوم لا تصلح لجلسة الغد.
+ * State lives in memory only. No localStorage: today's approval must not be
+ * usable in tomorrow's session.
  */
 export class ConsentLedger implements ConsentGate {
   private items = new Map<string, ConsentEntry>();
@@ -51,7 +52,8 @@ export class ConsentLedger implements ConsentGate {
   request(tool: ToolName, hash: string, summary: string): string {
     this.sweep();
 
-    // إن كان هناك طلب معلّق لنفس الفعل، لا تُكرّره — لا نُغرق المستخدم بنوافذ.
+    // If a request for this same action is already pending, do not duplicate it:
+    // flooding the user with dialogs is itself an attack.
     for (const e of this.items.values()) {
       if (e.status === 'pending' && e.tool === tool && e.hash === hash) return e.id;
     }
@@ -69,7 +71,7 @@ export class ConsentLedger implements ConsentGate {
     return entry.id;
   }
 
-  /** يُستدعى من onClick في ConsentDialog. لا شيء غير ذلك يستدعيه. */
+  /** Called from the onClick in ConsentDialog. Nothing else calls it. */
   grant(id: string): void {
     const e = this.items.get(id);
     if (!e || e.status !== 'pending') return;
@@ -87,10 +89,11 @@ export class ConsentLedger implements ConsentGate {
   }
 
   /**
-   * يبحث عن موافقة ممنوحة سارية تطابق الأداة والتجزئة معًا.
+   * Looks for a live granted consent matching both the tool and the hash.
    *
-   * المطابقة على الاثنين معًا هي ما يجعل الموافقة "مربوطة بالفعل":
-   * موافقةٌ على نشر المساعد أ لا تمرّ لحذف المساعد ب، ولا حتى لنشر المساعد ب.
+   * Matching on both together is what makes a consent "bound to the action":
+   * approval to publish assistant A does not pass a deletion of assistant B,
+   * nor even a publish of assistant B.
    */
   consume(tool: ToolName, hash: string): boolean {
     const now = Date.now();
@@ -130,7 +133,7 @@ export class ConsentLedger implements ConsentGate {
     return () => this.listeners.delete(fn);
   }
 
-  /** للاختبارات فقط. */
+  /** Tests only. */
   reset(): void {
     this.items.clear();
     this.seq = 0;

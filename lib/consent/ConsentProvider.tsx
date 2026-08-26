@@ -73,7 +73,7 @@ export function useConsent(): ConsentContextValue {
   return v;
 }
 
-/** يُبقي المهلة مرئية: يعيد التصيير كل ثانية ما دام هناك موافقة سارية. */
+/** Keeps the TTL visible: re-renders once a second while a consent is live. */
 export function useConsentTick(active: boolean) {
   const [, force] = React.useReducer((n: number) => n + 1, 0);
   useEffect(() => {
