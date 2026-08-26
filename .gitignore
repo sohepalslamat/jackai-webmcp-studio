@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Deployment
+.vercel
+
+# Environment - none of these are ever committed
+.env
+.env.*
+!.env.example
+
+# Local tooling
+.claude-flow/
+.DS_Store
+*.log
+npm-debug.log*
+pnpm-debug.log*
+coverage/

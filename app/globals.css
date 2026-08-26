@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-slate-50);
+  color: var(--color-slate-900);
+}
+
+/* A single pulse that draws the eye to a blocked call. Reduced-motion aware. */
+@keyframes consent-blocked-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(217 119 6 / 0.55);
+    transform: translateY(-2px);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgb(217 119 6 / 0);
+    transform: translateY(0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(217 119 6 / 0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .blocked-pulse {
+    animation: consent-blocked-pulse 900ms ease-out 1;
+  }
+}
