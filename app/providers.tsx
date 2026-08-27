@@ -30,7 +30,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <Masthead panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
 
       <div className="flex flex-1 flex-col lg:flex-row">
-        <main className="min-w-0 flex-1 px-6 py-10 lg:px-12">
+        <main className="min-w-0 flex-1 px-6 py-12 lg:px-14">
           <div className="mx-auto w-full max-w-2xl">{children}</div>
         </main>
 

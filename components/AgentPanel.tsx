@@ -77,14 +77,14 @@ export function AgentPanel() {
               return (
                 <li
                   key={name}
-                  className="trace-in flex items-center gap-3 py-[5px]"
+                  className="trace-in flex items-center gap-3 py-1.5"
                   style={{ animationDelay: `${i * 24}ms` }}
                 >
                   <span className="stamp tabular w-5 shrink-0 text-[var(--color-ink-faint)]">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <code
-                    className="flex-1 truncate text-[13px] text-[var(--color-ink-dim)]"
+                    className="flex-1 truncate text-sm text-[var(--color-ink-dim)]"
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     {name}
@@ -248,10 +248,10 @@ function Rack({
   last?: boolean;
 }) {
   return (
-    <section className={`px-5 py-4 ${last ? 'mt-auto' : 'border-b border-[var(--color-rule)]'}`}>
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h2 className="stamp text-[var(--color-ink-dim)]">{label}</h2>
-        <span className="stamp text-[var(--color-ink-faint)]">{badge}</span>
+    <section className={`px-5 py-5 ${last ? '' : 'border-b border-[var(--color-rule)]'}`}>
+      <div className="mb-4 flex items-baseline justify-between gap-2">
+        <h2 className="stamp font-semibold text-[var(--color-ink)]">{label}</h2>
+        <span className="stamp">{badge}</span>
       </div>
       {children}
     </section>
@@ -259,7 +259,7 @@ function Rack({
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs leading-relaxed text-[var(--color-ink-faint)]">{children}</p>;
+  return <p className="text-sm leading-relaxed text-[var(--color-ink-faint)]">{children}</p>;
 }
 
 const STATUS: Record<string, { label: string; className: string }> = {

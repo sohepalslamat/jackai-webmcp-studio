@@ -12,6 +12,10 @@ import { Section } from './Section';
  * exists to make an absent human present; here the human is present already,
  * and their click is the consent. Routing a person through a confirmation of
  * their own click would be theatre, not a guarantee.
+ *
+ * Each action is one labelled row with its control and its verb together, so
+ * the block reads as a short list of three things rather than a scatter of
+ * inputs.
  */
 export function DangerActions({ assistant }: { assistant: Assistant }) {
   const router = useRouter();
@@ -36,9 +40,16 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
       tone="alarm"
       note="These run on your click, directly. When your agent asks for them instead, they stop at the gate."
     >
-      <div className="space-y-5">
+      <div className="divide-y divide-[var(--color-rule)] border-y border-[var(--color-rule)]">
         {/* Publish */}
-        <Row label="publish">
+        <ActionRow
+          label="publish"
+          status={
+            assistant.channels.length > 0
+              ? `live on ${assistant.channels.join(' · ')}`
+              : undefined
+          }
+        >
           <select
             value={channel}
             onChange={(e) => setChannel(e.target.value)}
@@ -50,22 +61,20 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
             <option value="whatsapp">whatsapp</option>
             <option value="api">api</option>
           </select>
-          <button
-            onClick={() => run(() => store.publish(assistant.id, channel))}
-            className="stamp border border-[var(--color-rule-bright)] px-3.5 py-1.5 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)]"
-          >
-            publish →
-          </button>
-        </Row>
-
-        {assistant.channels.length > 0 && (
-          <p className="stamp text-[var(--color-signal)]">
-            live on {assistant.channels.join(' · ')}
-          </p>
-        )}
+          <Verb onClick={() => run(() => store.publish(assistant.id, channel))}>
+            publish
+          </Verb>
+        </ActionRow>
 
         {/* Share */}
-        <Row label="share">
+        <ActionRow
+          label="share"
+          status={
+            assistant.sharedWith.length > 0
+              ? `sent to ${assistant.sharedWith.join(', ')}`
+              : undefined
+          }
+        >
           <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -74,74 +83,100 @@ export function DangerActions({ assistant }: { assistant: Assistant }) {
             className="min-w-0 flex-1 border-b border-[var(--color-rule-bright)] bg-transparent pb-1 text-sm text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
             style={{ fontFamily: 'var(--font-mono)' }}
           />
-          <button
+          <Verb
             onClick={() =>
               run(() => {
                 store.share(assistant.id, email);
                 setEmail('');
               })
             }
-            className="stamp shrink-0 border border-[var(--color-rule-bright)] px-3.5 py-1.5 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)]"
           >
-            share →
-          </button>
-        </Row>
-
-        {assistant.sharedWith.length > 0 && (
-          <p className="stamp" style={{ textTransform: 'none', letterSpacing: '0.06em' }}>
-            shared with {assistant.sharedWith.join(', ')}
-          </p>
-        )}
-
-        {error && (
-          <p
-            role="alert"
-            className="border-l-2 border-[var(--color-halt)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-[var(--color-halt)]"
-          >
-            {error}
-          </p>
-        )}
+            share
+          </Verb>
+        </ActionRow>
 
         {/* Delete */}
-        <div className="border-t border-[var(--color-rule)] pt-5">
+        <ActionRow label="delete">
           {!confirmingDelete ? (
-            <button
-              onClick={() => setConfirmingDelete(true)}
-              className="stamp border border-[var(--color-rule-bright)] px-3.5 py-1.5 text-[var(--color-halt)] transition-colors hover:border-[var(--color-halt)]"
-            >
-              delete permanently
-            </button>
+            <>
+              <span className="flex-1 text-sm text-[var(--color-ink-faint)]">
+                Removes this assistant for good.
+              </span>
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                className="stamp shrink-0 border border-[var(--color-rule-bright)] px-4 py-2 text-[var(--color-halt)] transition-colors hover:border-[var(--color-halt)]"
+              >
+                delete
+              </button>
+            </>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="stamp text-[var(--color-halt)]">this cannot be undone</span>
+            <>
+              <span className="flex-1 text-sm text-[var(--color-halt)]">
+                This cannot be undone.
+              </span>
               <button
                 onClick={() => {
                   store.remove(assistant.id);
                   router.push('/');
                 }}
-                className="stamp bg-[var(--color-halt)] px-3.5 py-1.5 font-semibold text-[var(--color-void)]"
+                className="stamp shrink-0 bg-[var(--color-halt)] px-4 py-2 font-semibold text-[var(--color-void)]"
               >
                 yes, delete
               </button>
               <button
                 onClick={() => setConfirmingDelete(false)}
-                className="stamp text-[var(--color-ink-dim)] transition-colors hover:text-[var(--color-ink)]"
+                className="stamp shrink-0 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
               >
                 cancel
               </button>
-            </div>
+            </>
           )}
-        </div>
+        </ActionRow>
       </div>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 border-l-2 border-[var(--color-halt)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-halt)]"
+        >
+          {error}
+        </p>
+      )}
     </Section>
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function ActionRow({
+  label,
+  status,
+  children,
+}: {
+  label: string;
+  status?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-wrap items-baseline gap-3">
-      <span className="stamp w-14 shrink-0">{label}</span>
-      {children}
+    <div className="py-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-3">
+        <span className="stamp w-16 shrink-0 font-semibold text-[var(--color-ink-dim)]">
+          {label}
+        </span>
+        {children}
+      </div>
+      {status && (
+        <p className="stamp mt-2 ps-20 text-[var(--color-signal)]">{status}</p>
+      )}
     </div>
+  );
+}
+
+function Verb({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="stamp shrink-0 border border-[var(--color-rule-bright)] px-4 py-2 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)]"
+    >
+      {children} →
+    </button>
   );
 }

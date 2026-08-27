@@ -22,17 +22,17 @@
   --color-raised: #16202f;
 
   /* Hairlines, not borders. */
-  --color-rule: #1e2b3d;
-  --color-rule-bright: #2b3d55;
+  --color-rule: #22314a;
+  --color-rule-bright: #3a5070;
 
   /* Text descends in three steps only. */
-  --color-ink: #e8eef7;
-  --color-ink-dim: #8697ae;
-  --color-ink-faint: #55647a;
+  --color-ink: #eef3fa;
+  --color-ink-dim: #a9b8cc;
+  --color-ink-faint: #8195ad;
 
   /* Instrument readouts. */
   --color-signal: #4cd7a0;
-  --color-signal-dim: #1d5f47;
+  --color-signal-dim: #3f9d78;
   --color-alarm: #ffb020;
   --color-alarm-dim: #4a3410;
   --color-halt: #ff5f56;
@@ -52,9 +52,9 @@ body {
   font-family: var(--font-body);
   /* A faint scan grid. The room has a texture; it is not a flat fill. */
   background-image:
-    linear-gradient(var(--color-rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px);
-  background-size: 72px 72px;
+    linear-gradient(rgba(58, 80, 112, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 80, 112, 0.16) 1px, transparent 1px);
+  background-size: 88px 88px;
   background-position: -1px -1px;
 }
 
@@ -65,8 +65,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 120% 80% at 50% 40%,
-    var(--color-void) 30%,
+    ellipse 100% 70% at 50% 35%,
+    var(--color-void) 45%,
     transparent 100%
   );
   z-index: 0;
@@ -92,8 +92,8 @@ body > * {
 /* Labels are stamped, not written. */
 .stamp {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-ink-faint);
 }

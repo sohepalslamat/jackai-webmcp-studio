@@ -29,7 +29,11 @@ export function Section({
           alarm ? 'border-[var(--color-alarm-dim)]' : 'border-[var(--color-rule)]'
         }`}
       >
-        <h2 className={`stamp ${alarm ? 'text-[var(--color-alarm)]' : 'text-[var(--color-ink-dim)]'}`}>
+        <h2
+          className={`stamp font-semibold ${
+            alarm ? 'text-[var(--color-alarm)]' : 'text-[var(--color-ink)]'
+          }`}
+        >
           {alarm && <span className="me-2 inline-block h-1.5 w-1.5 bg-[var(--color-alarm)]" />}
           {label}
         </h2>
@@ -37,10 +41,12 @@ export function Section({
       </div>
 
       {note && (
-        <p className="mt-2.5 text-xs leading-relaxed text-[var(--color-ink-faint)]">{note}</p>
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-[var(--color-ink-faint)]">
+          {note}
+        </p>
       )}
 
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }

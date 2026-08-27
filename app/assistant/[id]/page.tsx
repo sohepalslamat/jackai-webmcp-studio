@@ -45,7 +45,7 @@ export default function AssistantPage({ params }: { params: Promise<{ id: string
         ← assistants
       </Link>
 
-      <header className="mt-5 border-b border-[var(--color-rule)] pb-6">
+      <header className="mt-6 border-b border-[var(--color-rule)] pb-8">
         <div className="flex items-start justify-between gap-4">
           <h1
             className="min-w-0 text-2xl leading-tight text-[var(--color-ink)]"
@@ -73,7 +73,7 @@ export default function AssistantPage({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      <div className="mt-8 space-y-10">
+      <div className="mt-12 space-y-16">
         <KnowledgePanel assistant={assistant} />
         <TestChat assistant={assistant} />
         <DangerActions assistant={assistant} />
