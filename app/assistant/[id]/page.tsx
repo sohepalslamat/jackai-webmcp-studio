@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAssistant } from '../../../lib/useStore';
 import { Step } from '../../../components/studio/Step';
@@ -30,7 +30,7 @@ export default function AssistantPage({ params }: { params: Promise<{ id: string
   const id = safeDecode(raw);
   const assistant = useAssistant(id);
 
-  // null means "follow the flow"; a number means the user chose a step.
+  // Which step is open. null means "not chosen yet, use the arrival step".
   const [chosen, setChosen] = useState<number | null>(null);
 
   if (!assistant) {
@@ -54,9 +54,14 @@ export default function AssistantPage({ params }: { params: Promise<{ id: string
   const tested = assistant.chat.length > 0;
   const live = assistant.published || assistant.sharedWith.length > 0;
 
-  // The first unfinished step leads, unless the user picked one.
-  const suggested = !taught ? 1 : !tested ? 2 : 3;
-  const openStep = chosen ?? suggested;
+  // The first unfinished step leads, decided once when the page mounts and
+  // never recomputed. Re-deriving it on every render would collapse a step the
+  // moment its work completed - you click a suggested question, the reply
+  // arrives, and the answer you asked for slides shut before you can read it.
+  const arrival = useRef<number | null>(null);
+  if (arrival.current === null) arrival.current = !taught ? 1 : !tested ? 2 : 3;
+
+  const openStep = chosen ?? arrival.current;
   const at = (n: number) => ({
     open: openStep === n,
     onOpen: () => setChosen(openStep === n ? -1 : n),

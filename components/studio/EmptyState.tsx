@@ -94,10 +94,17 @@ export function EmptyState() {
         with you.
       </h1>
 
-      <p className="mt-5 max-w-md text-sm leading-relaxed text-[var(--color-ink-dim)]">
-        Seven tools are exposed to your agent. Four of them run freely. Three of
-        them — publish, share, delete — stop at a gate that only your click can
-        open.
+      <p className="mt-5 max-w-lg text-sm leading-relaxed text-[var(--color-ink-dim)]">
+        A studio for building the chatbot that answers your customers. Teach it
+        what it should know, try it the way a customer would, then put it live
+        on a channel.
+      </p>
+
+      <p className="mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-ink-faint)]">
+        Everything here works by hand. It also exposes seven tools to an AI
+        agent, so it can do the same work with you. Four of those run freely.
+        Three — publish, share, delete — reach real people or cannot be undone,
+        so they stop at a gate that only your click can open.
       </p>
 
       <button
