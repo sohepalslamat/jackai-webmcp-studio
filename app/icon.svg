@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#070b12"/>
+  <!-- A gate: two posts and a bar that stops what comes through. -->
+  <rect x="6" y="7" width="3" height="18" fill="#8195ad"/>
+  <rect x="23" y="7" width="3" height="18" fill="#8195ad"/>
+  <rect x="6" y="14" width="20" height="4" fill="#ffb020"/>
+</svg>
