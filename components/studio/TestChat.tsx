@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { store, type Assistant } from '../../lib/store';
-import { Section } from './Section';
 
 /**
  * The test box. Calls store.test directly: this is the human path, and the
@@ -29,35 +28,27 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
     }
   };
 
+  const untaught = assistant.knowledge.length === 0;
+
   return (
-    <Section
-      label="test"
-      badge={
-        assistant.chat.length > 0 ? (
-          <span className="tabular">
-            {String(Math.floor(assistant.chat.length / 2)).padStart(2, '0')} exchanges
-          </span>
-        ) : undefined
-      }
-    >
-      {assistant.chat.length === 0 && !busy ? (
-        <p className="text-sm text-[var(--color-ink-faint)]">
-          Untested. Ask it something it knows.
+    <div>
+      {untaught && (
+        <p className="mb-4 border-l-2 border-[var(--color-rule-bright)] ps-4 text-sm leading-relaxed text-[var(--color-ink-faint)]">
+          It has no knowledge yet, so it will say so. Add a snippet in step 1
+          first for a real answer.
         </p>
-      ) : (
-        <div className="space-y-3">
+      )}
+
+      {assistant.chat.length > 0 && (
+        <div className="mb-5 space-y-4">
           {assistant.chat.map((turn, i) => (
-            <div key={i} className="flex gap-4">
-              <span
-                className={`stamp w-8 shrink-0 pt-0.5 ${
-                  turn.role === 'user' ? 'text-[var(--color-ink-faint)]' : 'text-[var(--color-signal-dim)]'
-                }`}
-              >
-                {turn.role === 'user' ? 'you' : 'bot'}
-              </span>
+            <div key={i}>
+              <p className="stamp mb-1">{turn.role === 'user' ? 'you' : assistant.name}</p>
               <p
-                className={`flex-1 whitespace-pre-line text-sm leading-relaxed ${
-                  turn.role === 'user' ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-dim)]'
+                className={`whitespace-pre-line text-sm leading-relaxed ${
+                  turn.role === 'user'
+                    ? 'text-[var(--color-ink)]'
+                    : 'border-l-2 border-[var(--color-signal-dim)] ps-4 text-[var(--color-ink-dim)]'
                 }`}
               >
                 {turn.text}
@@ -66,36 +57,38 @@ export function TestChat({ assistant }: { assistant: Assistant }) {
           ))}
 
           {busy && (
-            <div className="flex gap-4">
-              <span className="stamp w-8 shrink-0 pt-0.5 text-[var(--color-signal-dim)]">bot</span>
-              <span className="live-dot text-sm text-[var(--color-ink-faint)]">…</span>
+            <div>
+              <p className="stamp mb-1">{assistant.name}</p>
+              <p className="live-dot border-l-2 border-[var(--color-signal-dim)] ps-4 text-sm text-[var(--color-ink-faint)]">
+                typing…
+              </p>
             </div>
           )}
         </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-3 text-xs text-[var(--color-halt)]">
+        <p role="alert" className="mb-3 text-sm text-[var(--color-halt)]">
           {error}
         </p>
       )}
 
-      <form onSubmit={send} className="mt-5 flex items-baseline gap-3 border-b border-[var(--color-rule-bright)] pb-2 focus-within:border-[var(--color-alarm)]">
-        <span className="stamp shrink-0">msg</span>
+      <form onSubmit={send} className="flex flex-wrap items-center gap-3">
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Write as a customer would…"
-          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-ink)] outline-none"
+          placeholder="What are your opening hours?"
+          aria-label="Test message"
+          className="min-w-0 flex-1 border border-[var(--color-rule-bright)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
         />
         <button
           type="submit"
           disabled={busy || !message.trim()}
-          className="stamp shrink-0 text-[var(--color-ink-dim)] transition-colors hover:text-[var(--color-alarm)] disabled:opacity-30 disabled:hover:text-[var(--color-ink-dim)]"
+          className="stamp shrink-0 bg-[var(--color-ink)] px-5 py-2.5 font-semibold text-[var(--color-void)] transition-opacity hover:opacity-90 disabled:opacity-25"
         >
-          send →
+          send
         </button>
       </form>
-    </Section>
+    </div>
   );
 }

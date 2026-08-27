@@ -56,19 +56,9 @@ export default function AssistantsPage() {
                   {a.purpose}
                 </p>
 
-                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <code className="stamp" style={{ letterSpacing: '0.08em' }}>
-                    {a.id}
-                  </code>
-                  <span className="stamp tabular">
-                    {String(a.knowledge.length).padStart(2, '0')} snippets
-                  </span>
-                  {a.channels.length > 0 && (
-                    <span className="stamp text-[var(--color-signal-dim)]">
-                      {a.channels.join(' · ')}
-                    </span>
-                  )}
-                </div>
+                <p className="mt-2.5 text-sm text-[var(--color-ink-faint)]">
+                  {nextStep(a)}
+                </p>
               </div>
             </Link>
           </li>
@@ -87,4 +77,17 @@ function StateTag({ published }: { published: boolean }) {
   ) : (
     <span className="stamp shrink-0 text-[var(--color-ink-faint)]">draft</span>
   );
+}
+
+/** Says what this assistant still needs, in the words the steps use. */
+function nextStep(a: {
+  knowledge: string[];
+  chat: unknown[];
+  published: boolean;
+  channels: string[];
+}): string {
+  if (a.knowledge.length === 0) return 'Next: teach it something';
+  if (a.chat.length === 0) return 'Next: try it out';
+  if (!a.published) return 'Next: put it live';
+  return `Live on ${a.channels.join(', ')}`;
 }
