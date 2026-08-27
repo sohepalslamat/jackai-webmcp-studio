@@ -7,13 +7,15 @@ import type { Tone, Language } from '../../lib/store';
 /**
  * Emptiness is an invitation to act, not an apology.
  *
- * The three templates each create a fully-populated assistant in one click, so
- * a first-time visitor reaches a working studio without typing anything.
+ * The three templates each build a fully-populated assistant in one click, so
+ * a first-time visitor reaches a working studio without typing anything. This
+ * also preserves the toolchange demonstration: the page loads with four tools,
+ * and the sensitive three appear the moment the first assistant exists.
  */
 
 interface Template {
   key: string;
-  icon: string;
+  index: string;
   name: string;
   purpose: string;
   tone: Tone;
@@ -24,7 +26,7 @@ interface Template {
 const TEMPLATES: Template[] = [
   {
     key: 'support',
-    icon: '🎧',
+    index: '01',
     name: 'Support Assistant',
     purpose: 'Answers customer questions about the product and resolves common issues.',
     tone: 'friendly',
@@ -37,7 +39,7 @@ const TEMPLATES: Template[] = [
   },
   {
     key: 'sales',
-    icon: '💼',
+    index: '02',
     name: 'Sales Assistant',
     purpose: 'Explains the plans, compares them, and books a call with the sales team.',
     tone: 'formal',
@@ -50,7 +52,7 @@ const TEMPLATES: Template[] = [
   },
   {
     key: 'booking',
-    icon: '📅',
+    index: '03',
     name: 'Booking Assistant',
     purpose: 'Shows available slots, books them, and confirms with the customer.',
     tone: 'brief',
@@ -78,39 +80,68 @@ export function EmptyState() {
   };
 
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">No assistants yet</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
-        Start from a template, or create one from scratch.
+    <div className="trace-in">
+      <p className="stamp">no assistants · studio idle</p>
+
+      <h1
+        className="mt-6 text-3xl leading-[1.15] text-[var(--color-ink)] sm:text-4xl"
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        Build one yourself,
+        <br />
+        <span className="text-[var(--color-ink-faint)]">or let your agent build it</span>
+        <br />
+        with you.
+      </h1>
+
+      <p className="mt-5 max-w-md text-sm leading-relaxed text-[var(--color-ink-dim)]">
+        Seven tools are exposed to your agent. Four of them run freely. Three of
+        them — publish, share, delete — stop at a gate that only your click can
+        open.
       </p>
 
       <button
         onClick={() => router.push('/new')}
-        className="mt-5 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        className="mt-7 bg-[var(--color-ink)] px-6 py-3 text-sm font-bold tracking-wide text-[var(--color-void)] transition-opacity hover:opacity-90"
+        style={{ fontFamily: 'var(--font-display)' }}
       >
-        Create an assistant
+        CREATE AN ASSISTANT
       </button>
 
-      <p className="mt-8 text-xs font-medium uppercase tracking-wide text-slate-500">
-        Or start here
-      </p>
+      <div className="mt-14 border-t border-[var(--color-rule)] pt-5">
+        <p className="stamp">or load a template</p>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-        {TEMPLATES.map((tpl) => (
-          <button
-            key={tpl.key}
-            onClick={() => useTemplate(tpl)}
-            className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-start transition hover:border-slate-400 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
-          >
-            <span className="text-xl" aria-hidden="true">
-              {tpl.icon}
-            </span>
-            <span className="mt-2 block text-sm font-medium text-slate-900">{tpl.name}</span>
-            <span className="mt-1 block text-xs leading-relaxed text-slate-600">
-              {tpl.purpose}
-            </span>
-          </button>
-        ))}
+        <ul className="mt-3">
+          {TEMPLATES.map((tpl, i) => (
+            <li key={tpl.key} className="trace-in" style={{ animationDelay: `${120 + i * 60}ms` }}>
+              <button
+                onClick={() => useTemplate(tpl)}
+                className="group flex w-full items-start gap-5 border-b border-[var(--color-rule)] py-4 text-left transition-colors hover:bg-[var(--color-panel)]/60"
+              >
+                <span
+                  className="tabular w-8 shrink-0 pt-0.5 text-lg text-[var(--color-ink-faint)] transition-colors group-hover:text-[var(--color-alarm)]"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  {tpl.index}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block text-sm text-[var(--color-ink)]"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {tpl.name}
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-[var(--color-ink-dim)]">
+                    {tpl.purpose}
+                  </span>
+                </span>
+                <span className="stamp shrink-0 pt-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  load →
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

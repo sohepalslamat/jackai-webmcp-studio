@@ -1,32 +1,171 @@
 @import "tailwindcss";
 
+/*
+ * Night watch-room.
+ *
+ * The studio is an instrument, not a web form. Everything here follows from
+ * that: a deep console ground, hairline rules instead of card borders, numbers
+ * that sit in tabular columns, and exactly one alarm colour that appears only
+ * when the gate stops something. Amber is spent nowhere else, so when it
+ * arrives it means one thing.
+ */
+
+@theme {
+  --font-display: "Space Mono", ui-monospace, monospace;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Console ground: blue-black, never neutral grey. */
+  --color-void: #070b12;
+  --color-deck: #0c121c;
+  --color-panel: #111926;
+  --color-raised: #16202f;
+
+  /* Hairlines, not borders. */
+  --color-rule: #1e2b3d;
+  --color-rule-bright: #2b3d55;
+
+  /* Text descends in three steps only. */
+  --color-ink: #e8eef7;
+  --color-ink-dim: #8697ae;
+  --color-ink-faint: #55647a;
+
+  /* Instrument readouts. */
+  --color-signal: #4cd7a0;
+  --color-signal-dim: #1d5f47;
+  --color-alarm: #ffb020;
+  --color-alarm-dim: #4a3410;
+  --color-halt: #ff5f56;
+}
+
+:root {
+  color-scheme: dark;
+}
+
 html {
-  color-scheme: light;
+  background-color: var(--color-void);
 }
 
 body {
-  background-color: var(--color-slate-50);
-  color: var(--color-slate-900);
+  background-color: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  /* A faint scan grid. The room has a texture; it is not a flat fill. */
+  background-image:
+    linear-gradient(var(--color-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: -1px -1px;
 }
 
-/* A single pulse that draws the eye to a blocked call. Reduced-motion aware. */
-@keyframes consent-blocked-pulse {
+/* The grid fades toward the centre so content never fights it. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 80% at 50% 40%,
+    var(--color-void) 30%,
+    transparent 100%
+  );
+  z-index: 0;
+}
+
+/* Everything real sits above the room. */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--color-alarm);
+  color: var(--color-void);
+}
+
+/* Numerals line up in columns, the way a readout should. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Labels are stamped, not written. */
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+/* ------------------------------------------------------------------ */
+/* Instrument behaviour                                                */
+/* ------------------------------------------------------------------ */
+
+/* A live consent is counting down. The dot breathes to say so. */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* The gate stopped something. One sweep of amber across the row. */
+@keyframes alarm-sweep {
   0% {
-    box-shadow: 0 0 0 0 rgb(217 119 6 / 0.55);
-    transform: translateY(-2px);
-  }
-  70% {
-    box-shadow: 0 0 0 12px rgb(217 119 6 / 0);
-    transform: translateY(0);
+    background-position: 200% 0;
+    border-color: var(--color-alarm);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(217 119 6 / 0);
-    transform: translateY(0);
+    background-position: -200% 0;
+    border-color: var(--color-rule-bright);
   }
+}
+
+@keyframes trace-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .blocked-pulse {
-    animation: consent-blocked-pulse 900ms ease-out 1;
+  .live-dot {
+    animation: pulse-live 1.6s ease-in-out infinite;
   }
+
+  .alarm-row {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--color-alarm) 22%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: alarm-sweep 1.1s ease-out 1;
+  }
+
+  .trace-in {
+    animation: trace-in 260ms ease-out both;
+  }
+}
+
+/* Focus is a bracket, not a glow. */
+*:focus-visible {
+  outline: 2px solid var(--color-alarm);
+  outline-offset: 2px;
+}
+
+/* Form controls inherit the console, never the browser default. */
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: var(--color-ink);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+
+select option {
+  background: var(--color-panel);
+  color: var(--color-ink);
 }

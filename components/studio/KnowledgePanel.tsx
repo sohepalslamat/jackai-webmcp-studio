@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { store, type Assistant } from '../../lib/store';
+import { Section } from './Section';
 
 export function KnowledgePanel({ assistant }: { assistant: Assistant }) {
   const [text, setText] = useState('');
@@ -19,51 +20,51 @@ export function KnowledgePanel({ assistant }: { assistant: Assistant }) {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-medium text-slate-900">Knowledge base</h3>
-        <span className="text-xs text-slate-500">
-          {assistant.knowledge.length} snippet{assistant.knowledge.length === 1 ? '' : 's'}
-        </span>
-      </div>
-
+    <Section
+      label="knowledge base"
+      badge={
+        <span className="tabular">{String(assistant.knowledge.length).padStart(2, '0')}</span>
+      }
+    >
       {assistant.knowledge.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">
-          No knowledge yet. Paste text the assistant should know.
+        <p className="text-sm text-[var(--color-ink-faint)]">
+          Nothing yet. Paste text the assistant should know.
         </p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul>
           {assistant.knowledge.map((snippet, i) => (
-            <li
-              key={i}
-              className="rounded-lg bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-700"
-            >
-              {snippet}
+            <li key={i} className="flex gap-4 border-b border-[var(--color-rule)] py-3 last:border-0">
+              <span className="stamp tabular w-5 shrink-0 pt-0.5">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="flex-1 text-sm leading-relaxed text-[var(--color-ink-dim)]">{snippet}</p>
             </li>
           ))}
         </ul>
       )}
 
-      <form onSubmit={add} className="mt-4">
+      <form onSubmit={add} className="mt-5">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={3}
-          placeholder="Paste text: opening hours, refund policy, pricing…"
-          className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          rows={2}
+          placeholder="Opening hours, refund policy, pricing…"
+          className="w-full resize-y border border-[var(--color-rule)] bg-[var(--color-panel)] px-3.5 py-3 text-sm leading-relaxed text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-rule-bright)]"
         />
+
         {error && (
-          <p role="alert" className="mt-2 text-sm text-red-700">
+          <p role="alert" className="mt-2 text-xs text-[var(--color-halt)]">
             {error}
           </p>
         )}
+
         <button
           type="submit"
-          className="mt-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+          className="stamp mt-2.5 border border-[var(--color-rule-bright)] px-3.5 py-1.5 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)]"
         >
-          Add
+          + add snippet
         </button>
       </form>
-    </section>
+    </Section>
   );
 }

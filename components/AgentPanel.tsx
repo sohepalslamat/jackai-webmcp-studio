@@ -5,17 +5,18 @@ import { useConsent } from '../lib/consent/ConsentProvider';
 import { CONSENT_TTL_MS, sensitivityOf, TOOL_NAMES, type ToolName } from '../lib/contracts';
 
 /**
- * The side panel shows what is normally invisible: which tools exist right now,
- * and every gate decision at the moment it happens. Without it a judge watching
- * a three-minute video sees nothing at all.
+ * The instrument rack.
  *
- * Type sizes here are deliberately larger than the rest of the interface,
- * because this panel has to stay readable in a 1080p recording.
+ * It shows what is normally invisible: which tools exist right now, and every
+ * gate decision at the moment it happens. Without it a judge watching a
+ * three-minute video sees nothing at all, so readability at 1080p outranks
+ * density here.
  */
 export function AgentPanel() {
   const { entries, calls } = useConsent();
   const [registered, setRegistered] = useState<string[]>([]);
   const [, tick] = useState(0);
+  const [hasContext, setHasContext] = useState(false);
 
   // Follows the real registry through the toolchange event, so the list
   // reflects what the agent can actually call, not what we believe we set up.
@@ -46,37 +47,54 @@ export function AgentPanel() {
   // Resolved after mount, never during render: the server has no
   // document.modelContext, so reading it inline makes the first client paint
   // disagree with the server HTML and React discards the tree.
-  const [hasContext, setHasContext] = useState(false);
   useEffect(() => {
     setHasContext(!!document.modelContext);
   }, []);
 
   return (
-    <aside className="flex h-full w-full flex-col gap-5 border-s border-slate-200 bg-white p-5">
-      <header>
-        <h2 className="text-base font-semibold text-slate-900">What your agent sees</h2>
-        {!hasContext && (
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            No tools registered. Open this page in a WebMCP-capable browser.
-          </p>
-        )}
-      </header>
-
-      {/* Registered tools */}
-      <section>
-        <SectionTitle>Tools available now</SectionTitle>
+    <div className="flex h-full flex-col bg-[var(--color-deck)]">
+      <Rack
+        label="agent surface"
+        badge={
+          <span className="flex items-center gap-1.5">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                hasContext ? 'live-dot bg-[var(--color-signal)]' : 'bg-[var(--color-ink-faint)]'
+              }`}
+            />
+            <span className={hasContext ? 'text-[var(--color-signal)]' : 'text-[var(--color-ink-faint)]'}>
+              {hasContext ? 'linked' : 'no link'}
+            </span>
+          </span>
+        }
+      >
         {registered.length === 0 ? (
-          <Muted>No tools registered. Open this page in a WebMCP-capable browser.</Muted>
+          <Empty>No tools registered. Open this page in a WebMCP-capable browser.</Empty>
         ) : (
-          <ul className="mt-2 space-y-1.5">
-            {registered.map((name) => {
+          <ul>
+            {registered.map((name, i) => {
               const high = isKnownTool(name) && sensitivityOf(name) === 'high';
               return (
-                <li key={name} className="flex items-center justify-between gap-2">
-                  <code className="text-[13px] text-slate-800">{name}</code>
+                <li
+                  key={name}
+                  className="trace-in flex items-center gap-3 py-[5px]"
+                  style={{ animationDelay: `${i * 24}ms` }}
+                >
+                  <span className="stamp tabular w-5 shrink-0 text-[var(--color-ink-faint)]">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <code
+                    className="flex-1 truncate text-[13px] text-[var(--color-ink-dim)]"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    {name}
+                  </code>
                   {high && (
-                    <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">
-                      Needs confirmation
+                    <span
+                      className="stamp shrink-0 border border-[var(--color-alarm-dim)] bg-[var(--color-alarm-dim)]/40 px-1.5 py-0.5 text-[var(--color-alarm)]"
+                      title="Sensitive: requires your confirmation"
+                    >
+                      gated
                     </span>
                   )}
                 </li>
@@ -84,68 +102,84 @@ export function AgentPanel() {
             })}
           </ul>
         )}
-      </section>
+      </Rack>
 
-      {/* Gate decisions */}
-      <section>
-        <SectionTitle>Gate decisions</SectionTitle>
+      <Rack label="gate decisions" badge={<span className="tabular">{entries.length}</span>}>
         {entries.length === 0 ? (
-          <Muted>No decisions yet.</Muted>
+          <Empty>No decisions yet.</Empty>
         ) : (
-          <ol className="mt-2 space-y-2">
-            {entries.slice(0, 5).map((e) => {
+          <ol className="space-y-2">
+            {entries.slice(0, 4).map((e) => {
               const secondsLeft =
                 e.status === 'granted' && e.decidedAt
                   ? Math.max(0, Math.ceil((CONSENT_TTL_MS - (Date.now() - e.decidedAt)) / 1000))
                   : null;
 
               return (
-                <li key={e.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <li
+                  key={e.id}
+                  className="trace-in border-l-2 border-[var(--color-rule-bright)] bg-[var(--color-panel)] px-3 py-2.5"
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <code className="text-[13px] text-slate-800">{e.tool}</code>
+                    <code
+                      className="truncate text-[13px] text-[var(--color-ink)]"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                    >
+                      {e.tool}
+                    </code>
                     <StatusTag status={e.status} />
                   </div>
-                  <p className="mt-1 truncate text-xs text-slate-600" title={e.summary}>
+
+                  <p className="mt-1.5 truncate text-xs text-[var(--color-ink-dim)]" title={e.summary}>
                     {e.summary}
                   </p>
-                  <p className="mt-1 font-mono text-[11px] text-slate-500">
-                    {e.hash.slice(0, 12)}…
-                  </p>
-                  {secondsLeft !== null && (
-                    // A live countdown is the clearest way to show that consent
-                    // is contemporaneous, not permanent.
-                    <p className="mt-1 text-[11px] font-medium text-emerald-800">
-                      Expires in {secondsLeft}s
-                    </p>
-                  )}
+
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <code
+                      className="stamp tabular text-[var(--color-ink-faint)]"
+                      title={e.hash}
+                      style={{ letterSpacing: '0.08em' }}
+                    >
+                      {e.hash.slice(0, 10)}
+                    </code>
+
+                    {secondsLeft !== null && (
+                      /* A live countdown is the clearest way to show that a
+                         consent is contemporaneous, not permanent. */
+                      <span className="flex items-center gap-1.5">
+                        <span className="live-dot h-1 w-1 rounded-full bg-[var(--color-signal)]" />
+                        <span className="stamp tabular text-[var(--color-signal)]">
+                          {secondsLeft}s left
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </li>
               );
             })}
           </ol>
         )}
-      </section>
+      </Rack>
 
-      {/* Recent calls */}
-      <section className="mt-auto">
-        <SectionTitle>Recent calls</SectionTitle>
+      <Rack label="call log" badge={<span className="tabular">{calls.length}</span>} last>
         {calls.length === 0 ? (
-          <Muted>No calls yet.</Muted>
+          <Empty>No calls yet.</Empty>
         ) : (
-          <ul className="mt-2 space-y-1.5">
-            {calls.slice(0, 8).map((c, i) => (
+          <ul className="space-y-1">
+            {calls.slice(0, 7).map((c, i) => (
               <CallRow key={`${c.at}-${i}`} call={c} isLatest={i === 0} />
             ))}
           </ul>
         )}
-      </section>
-    </aside>
+      </Rack>
+    </div>
   );
 }
 
 /**
- * A blocked call is the moment the whole project exists for, so it gets a
- * colour of its own, a one-shot pulse, and a sentence in plain words.
- * Never the raw refusal code.
+ * A blocked call is the moment the whole project exists for, so it gets the
+ * only alarm colour in the system, one sweep of light, and a sentence in plain
+ * words. Never the raw refusal code.
  */
 function CallRow({
   call,
@@ -156,7 +190,7 @@ function CallRow({
 }) {
   const blocked = call.outcome === 'blocked';
 
-  // Pulse only for a genuinely new blocked call, not on every re-render.
+  // Sweep only for a genuinely new blocked call, not on every re-render.
   const seen = useRef<number | null>(null);
   const isNew = isLatest && blocked && seen.current !== call.at;
   useEffect(() => {
@@ -165,64 +199,80 @@ function CallRow({
 
   if (!blocked) {
     return (
-      <li className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5">
-        <code className="text-[13px] text-slate-700">{call.tool}</code>
-        <span className="shrink-0 text-xs font-medium text-emerald-800">Executed</span>
+      <li className="flex items-center gap-2 py-1">
+        <span className="h-1 w-1 shrink-0 rounded-full bg-[var(--color-signal-dim)]" />
+        <code
+          className="flex-1 truncate text-xs text-[var(--color-ink-faint)]"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          {call.tool}
+        </code>
+        <span className="stamp shrink-0 text-[var(--color-signal-dim)]">ran</span>
       </li>
     );
   }
 
   return (
     <li
-      className={`rounded-lg border-s-4 border-amber-500 bg-amber-50 px-3 py-2 ${
-        isNew ? 'blocked-pulse' : ''
+      className={`border border-[var(--color-rule-bright)] bg-[var(--color-alarm-dim)]/25 px-3 py-2 ${
+        isNew ? 'alarm-row' : ''
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <code className="text-[13px] font-medium text-amber-950">{call.tool}</code>
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 shrink-0 bg-[var(--color-alarm)]" />
+        <code
+          className="flex-1 truncate text-xs font-medium text-[var(--color-alarm)]"
+          style={{ fontFamily: 'var(--font-mono)' }}
+        >
+          {call.tool}
+        </code>
+        <span className="stamp shrink-0 text-[var(--color-alarm)]">halted</span>
       </div>
-      <p className="mt-0.5 text-xs font-medium leading-relaxed text-amber-900">
-        Blocked: this action needs your confirmation
+      <p className="mt-1 text-[11px] leading-relaxed text-[var(--color-ink-dim)]">
+        Blocked: this action needs your confirmation.
       </p>
     </li>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+/** One bay in the rack: a stamped label, a readout, and a hairline below. */
+function Rack({
+  label,
+  badge,
+  children,
+  last,
+}: {
+  label: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  last?: boolean;
+}) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{children}</h3>
+    <section className={`px-5 py-4 ${last ? 'mt-auto' : 'border-b border-[var(--color-rule)]'}`}>
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <h2 className="stamp text-[var(--color-ink-dim)]">{label}</h2>
+        <span className="stamp text-[var(--color-ink-faint)]">{badge}</span>
+      </div>
+      {children}
+    </section>
   );
 }
 
-function Muted({ children }: { children: React.ReactNode }) {
-  return <p className="mt-2 text-xs leading-relaxed text-slate-500">{children}</p>;
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs leading-relaxed text-[var(--color-ink-faint)]">{children}</p>;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Waiting for you',
-  granted: 'Confirmed',
-  consumed: 'Consumed',
-  denied: 'Denied',
-  expired: 'Expired',
+const STATUS: Record<string, { label: string; className: string }> = {
+  pending: { label: 'awaiting you', className: 'text-[var(--color-alarm)]' },
+  granted: { label: 'confirmed', className: 'text-[var(--color-signal)]' },
+  consumed: { label: 'spent', className: 'text-[var(--color-ink-faint)]' },
+  denied: { label: 'denied', className: 'text-[var(--color-halt)]' },
+  expired: { label: 'expired', className: 'text-[var(--color-ink-faint)]' },
 };
 
 function StatusTag({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-900',
-    granted: 'bg-emerald-100 text-emerald-900',
-    consumed: 'bg-slate-200 text-slate-700',
-    denied: 'bg-red-100 text-red-800',
-    expired: 'bg-slate-200 text-slate-600',
-  };
-  return (
-    <span
-      className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${
-        styles[status] ?? 'bg-slate-200 text-slate-700'
-      }`}
-    >
-      {STATUS_LABELS[status] ?? status}
-    </span>
-  );
+  const s = STATUS[status] ?? { label: status, className: 'text-[var(--color-ink-faint)]' };
+  return <span className={`stamp shrink-0 ${s.className}`}>{s.label}</span>;
 }
 
 function isKnownTool(name: string): name is ToolName {

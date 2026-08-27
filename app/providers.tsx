@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ConsentProvider } from '../lib/consent/ConsentProvider';
+import { ConsentProvider, useConsent } from '../lib/consent/ConsentProvider';
 import { ConsentDialog } from '../components/ConsentDialog';
 import { AgentPanel } from '../components/AgentPanel';
 import { ToolsHost } from '../lib/tools/ToolsHost';
@@ -26,43 +26,71 @@ function Shell({ children }: { children: React.ReactNode }) {
   const [panelOpen, setPanelOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* The agent panel is fixed on the left in wide viewports and a
-          collapsible drawer on mobile. */}
-      <div
-        className={`${
-          panelOpen ? 'block' : 'hidden'
-        } order-2 w-full shrink-0 lg:order-1 lg:block lg:w-80 xl:w-96`}
-      >
-        <div className="lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-          <AgentPanel />
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col">
+      <Masthead panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
 
-      <div className="order-1 flex min-w-0 flex-1 flex-col lg:order-2">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex w-full max-w-3xl items-center gap-4 px-5 py-4">
-            <Link href="/" className="min-w-0 flex-1">
-              <h1 className="truncate text-base font-semibold text-slate-900">
-                Assistant Studio
-              </h1>
-              <p className="truncate text-xs text-slate-500">
-                Build your assistant yourself, or ask your agent to build it with you.
-              </p>
-            </Link>
+      <div className="flex flex-1 flex-col lg:flex-row">
+        <main className="min-w-0 flex-1 px-6 py-10 lg:px-12">
+          <div className="mx-auto w-full max-w-2xl">{children}</div>
+        </main>
 
-            <button
-              onClick={() => setPanelOpen((v) => !v)}
-              className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 lg:hidden"
-              aria-expanded={panelOpen}
-            >
-              {panelOpen ? 'Hide panel' : 'Agent panel'}
-            </button>
+        {/* The instrument panel: a permanent right-hand rail on wide screens,
+            a drawer on mobile. It is where the gate becomes visible. */}
+        <aside
+          className={`${
+            panelOpen ? 'block' : 'hidden'
+          } w-full shrink-0 border-t border-[var(--color-rule)] lg:block lg:w-[22rem] lg:border-l lg:border-t-0 xl:w-[24rem]`}
+        >
+          <div className="lg:sticky lg:top-[2.75rem] lg:h-[calc(100vh-2.75rem)] lg:overflow-y-auto">
+            <AgentPanel />
           </div>
-        </header>
-
-        <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8">{children}</main>
+        </aside>
       </div>
     </div>
+  );
+}
+
+/**
+ * A status strip rather than a header. It reports what the room is doing:
+ * whether an agent surface exists, and how many decisions the gate has taken.
+ */
+function Masthead({
+  panelOpen,
+  onTogglePanel,
+}: {
+  panelOpen: boolean;
+  onTogglePanel: () => void;
+}) {
+  const { entries } = useConsent();
+  const blocked = entries.length;
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-[var(--color-rule)] bg-[var(--color-void)]/95 backdrop-blur">
+      <div className="flex h-11 items-center gap-4 px-6 lg:px-12">
+        <Link href="/" className="group flex items-baseline gap-3">
+          <span
+            className="text-sm font-bold tracking-tight text-[var(--color-ink)]"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            ASSISTANT&nbsp;STUDIO
+          </span>
+          <span className="stamp hidden sm:inline">consent gate</span>
+        </Link>
+
+        <div className="ms-auto flex items-center gap-5">
+          <span className="stamp tabular hidden md:inline">
+            gate decisions {String(blocked).padStart(2, '0')}
+          </span>
+
+          <button
+            onClick={onTogglePanel}
+            aria-expanded={panelOpen}
+            className="stamp border border-[var(--color-rule-bright)] px-2.5 py-1 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)] lg:hidden"
+          >
+            {panelOpen ? 'hide' : 'panel'}
+          </button>
+        </div>
+      </div>
+    </header>
   );
 }

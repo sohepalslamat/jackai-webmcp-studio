@@ -12,6 +12,10 @@ import { useConsent } from '../lib/consent/ConsentProvider';
  * The text shown comes from summarize() in the application, never from the
  * model, so an agent cannot describe one action to the user while a different
  * one waits behind the button.
+ *
+ * Visually it is a hold notice, not a modal: the room dims, an amber rule
+ * appears across the top edge, and the action is stated in full before
+ * anything clickable. Nothing here should feel like a cookie banner.
  */
 export function ConsentDialog() {
   const { gate, pending } = useConsent();
@@ -41,12 +45,7 @@ export function ConsentDialog() {
         if (!confirm || !deny) return;
 
         e.preventDefault();
-        const active = document.activeElement;
-        if (e.shiftKey) {
-          (active === confirm ? deny : confirm).focus();
-        } else {
-          (active === confirm ? deny : confirm).focus();
-        }
+        (document.activeElement === confirm ? deny : confirm).focus();
       }
     };
 
@@ -62,49 +61,83 @@ export function ConsentDialog() {
       aria-modal="true"
       aria-labelledby="consent-title"
       aria-describedby="consent-body"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--color-void)]/85 p-4 backdrop-blur-sm sm:items-center"
     >
-      <div className="w-full max-w-md rounded-xl border border-slate-300 bg-white p-6 shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-          This action needs your confirmation
-        </p>
+      <div className="trace-in w-full max-w-lg border border-[var(--color-rule-bright)] bg-[var(--color-deck)] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.9)]">
+        {/* The alarm rule. The only place this colour spans a full edge. */}
+        <div className="h-[3px] bg-[var(--color-alarm)]" />
 
-        <h2 id="consent-title" className="mt-2 text-lg font-semibold text-slate-900">
-          {pending.summary}
-        </h2>
-
-        <p id="consent-body" className="mt-3 text-sm leading-relaxed text-slate-700">
-          Your agent asked to run the action below. Nothing happens until you confirm.
-        </p>
-
-        <dl className="mt-4 rounded-lg bg-slate-100 p-3 font-mono text-xs text-slate-700">
-          <div className="flex justify-between gap-4">
-            <dt>tool</dt>
-            <dd className="text-slate-900">{pending.tool}</dd>
+        <div className="px-7 py-6">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 bg-[var(--color-alarm)]" />
+            <p className="stamp text-[var(--color-alarm)]">execution halted</p>
           </div>
-          <div className="mt-1 flex justify-between gap-4">
-            <dt>fingerprint</dt>
-            <dd className="truncate text-slate-900" title={pending.hash}>
-              {pending.hash.slice(0, 16)}…
-            </dd>
-          </div>
-        </dl>
 
-        <div className="mt-5 flex gap-3">
-          <button
-            ref={confirmRef}
-            onClick={() => gate.grant(pending.id)}
-            className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          <h2
+            id="consent-title"
+            className="mt-4 text-xl leading-snug text-[var(--color-ink)]"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            Confirm
-          </button>
-          <button
-            ref={denyRef}
-            onClick={() => gate.deny(pending.id)}
-            className="flex-1 rounded-lg border border-slate-400 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
-          >
-            Deny
-          </button>
+            {pending.summary}
+          </h2>
+
+          <p id="consent-body" className="mt-3 text-sm leading-relaxed text-[var(--color-ink-dim)]">
+            Your agent asked to run this. It cannot proceed on its own, and it
+            cannot approve this for you. Nothing happens until you decide.
+          </p>
+
+          {/* The receipt: exactly what is being authorised. */}
+          <dl className="mt-5 border-y border-[var(--color-rule)] py-3 text-xs">
+            <div className="flex items-baseline justify-between gap-4 py-1">
+              <dt className="stamp">tool</dt>
+              <dd
+                className="truncate text-[var(--color-ink)]"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                {pending.tool}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-1">
+              <dt className="stamp">fingerprint</dt>
+              <dd
+                className="tabular truncate text-[var(--color-ink-dim)]"
+                title={pending.hash}
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                {pending.hash.slice(0, 24)}…
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-1">
+              <dt className="stamp">valid for</dt>
+              <dd
+                className="text-[var(--color-ink-dim)]"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                this action · once · 120s
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              ref={confirmRef}
+              onClick={() => gate.grant(pending.id)}
+              className="flex-1 bg-[var(--color-alarm)] px-5 py-3 text-sm font-bold tracking-wide text-[var(--color-void)] transition-opacity hover:opacity-90"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              CONFIRM
+            </button>
+            <button
+              ref={denyRef}
+              onClick={() => gate.deny(pending.id)}
+              className="flex-1 border border-[var(--color-rule-bright)] px-5 py-3 text-sm font-bold tracking-wide text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-halt)] hover:text-[var(--color-halt)]"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              DENY
+            </button>
+          </div>
+
+          <p className="stamp mt-3 text-center">esc denies</p>
         </div>
       </div>
     </div>

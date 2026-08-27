@@ -11,48 +11,80 @@ export default function AssistantsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-medium text-slate-600">
-          {assistants.length === 1 ? '1 assistant' : `${assistants.length} assistants`}
-        </h2>
+      <header className="flex items-baseline justify-between gap-4 border-b border-[var(--color-rule)] pb-4">
+        <h1 className="stamp text-[var(--color-ink-dim)]">
+          assistants ·{' '}
+          <span className="tabular text-[var(--color-ink)]">
+            {String(assistants.length).padStart(2, '0')}
+          </span>
+        </h1>
         <Link
           href="/new"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          className="stamp border border-[var(--color-rule-bright)] px-3 py-1.5 text-[var(--color-ink-dim)] transition-colors hover:border-[var(--color-alarm)] hover:text-[var(--color-ink)]"
         >
-          New assistant
+          + new
         </Link>
-      </div>
+      </header>
 
-      <ul className="mt-4 space-y-3">
-        {assistants.map((a) => (
-          <li key={a.id}>
+      <ul>
+        {assistants.map((a, i) => (
+          <li key={a.id} className="trace-in" style={{ animationDelay: `${i * 40}ms` }}>
             <Link
               href={`/assistant/${a.id}`}
-              className="block rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+              className="group flex items-start gap-5 border-b border-[var(--color-rule)] py-5 transition-colors hover:bg-[var(--color-panel)]/60"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate font-medium text-slate-900">{a.name}</h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.purpose}</p>
-                </div>
-                <span
-                  className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
-                    a.published
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {a.published ? 'Published' : 'Draft'}
-                </span>
-              </div>
+              {/* The index number is part of the instrument, not decoration. */}
+              <span
+                className="tabular w-8 shrink-0 pt-0.5 text-lg text-[var(--color-ink-faint)] transition-colors group-hover:text-[var(--color-alarm)]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                {String(i + 1).padStart(2, '0')}
+              </span>
 
-              <p className="mt-3 font-mono text-xs text-slate-400">
-                {a.id} · {a.knowledge.length} snippet{a.knowledge.length === 1 ? '' : 's'}
-              </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-3">
+                  <h2
+                    className="truncate text-base text-[var(--color-ink)]"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {a.name}
+                  </h2>
+                  <StateTag published={a.published} />
+                </div>
+
+                <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[var(--color-ink-dim)]">
+                  {a.purpose}
+                </p>
+
+                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <code className="stamp" style={{ letterSpacing: '0.08em' }}>
+                    {a.id}
+                  </code>
+                  <span className="stamp tabular">
+                    {String(a.knowledge.length).padStart(2, '0')} snippets
+                  </span>
+                  {a.channels.length > 0 && (
+                    <span className="stamp text-[var(--color-signal-dim)]">
+                      {a.channels.join(' · ')}
+                    </span>
+                  )}
+                </div>
+              </div>
             </Link>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function StateTag({ published }: { published: boolean }) {
+  return published ? (
+    <span className="stamp flex shrink-0 items-center gap-1.5 text-[var(--color-signal)]">
+      <span className="h-1 w-1 rounded-full bg-[var(--color-signal)]" />
+      live
+    </span>
+  ) : (
+    <span className="stamp shrink-0 text-[var(--color-ink-faint)]">draft</span>
   );
 }

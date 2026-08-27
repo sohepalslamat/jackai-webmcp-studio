@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { store } from '../../lib/store';
 
+/**
+ * The create form. The field options mirror the enums in the create_assistant
+ * input schema exactly, so a human and an agent can produce the same shapes.
+ */
+
 const TONE_OPTIONS = [
   { value: 'formal', label: 'Formal' },
   { value: 'friendly', label: 'Friendly' },
@@ -17,10 +22,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'tr', label: 'Turkish' },
 ] as const;
 
-/**
- * The create form. The field options mirror the enums in the create_assistant
- * input schema exactly, so a human and an agent can produce the same shapes.
- */
 export default function NewAssistantPage() {
   const router = useRouter();
 
@@ -42,41 +43,46 @@ export default function NewAssistantPage() {
   };
 
   return (
-    <div>
-      <Link href="/" className="text-sm text-slate-500 hover:text-slate-900">
-        ← Back to list
+    <div className="trace-in">
+      <Link href="/" className="stamp transition-colors hover:text-[var(--color-ink)]">
+        ← assistants
       </Link>
 
-      <h2 className="mt-4 text-lg font-semibold text-slate-900">New assistant</h2>
+      <h1
+        className="mt-5 text-2xl text-[var(--color-ink)]"
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        New assistant
+      </h1>
 
-      <form onSubmit={submit} className="mt-5 space-y-5">
-        <Field label="Name" hint="As the customer sees it" htmlFor="name">
+      <form onSubmit={submit} className="mt-8 space-y-7">
+        <Field label="name" hint="as the customer sees it" htmlFor="name">
           <input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full border-b border-[var(--color-rule-bright)] bg-transparent pb-2 text-base text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
             autoFocus
           />
         </Field>
 
-        <Field label="Purpose" hint="What it does, in one sentence" htmlFor="purpose">
+        <Field label="purpose" hint="what it does, in one sentence" htmlFor="purpose">
           <textarea
             id="purpose"
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
-            rows={3}
-            className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            rows={2}
+            className="w-full resize-y border-b border-[var(--color-rule-bright)] bg-transparent pb-2 text-base leading-relaxed text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Tone" htmlFor="tone">
+        <div className="grid gap-7 sm:grid-cols-2">
+          <Field label="tone" htmlFor="tone">
             <select
               id="tone"
               value={tone}
               onChange={(e) => setTone(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-full cursor-pointer border-b border-[var(--color-rule-bright)] bg-transparent pb-2 text-base text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
             >
               {TONE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -86,12 +92,12 @@ export default function NewAssistantPage() {
             </select>
           </Field>
 
-          <Field label="Language" htmlFor="language">
+          <Field label="reply language" htmlFor="language">
             <select
               id="language"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-full cursor-pointer border-b border-[var(--color-rule-bright)] bg-transparent pb-2 text-base text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-alarm)]"
             >
               {LANGUAGE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -103,23 +109,24 @@ export default function NewAssistantPage() {
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+          <p
+            role="alert"
+            className="border-l-2 border-[var(--color-halt)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-halt)]"
+          >
             {error}
           </p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex items-center gap-4 pt-2">
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+            className="bg-[var(--color-ink)] px-6 py-3 text-sm font-bold tracking-wide text-[var(--color-void)] transition-opacity hover:opacity-90"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            Create
+            CREATE
           </button>
-          <Link
-            href="/"
-            className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Cancel
+          <Link href="/" className="stamp transition-colors hover:text-[var(--color-ink)]">
+            cancel
           </Link>
         </div>
       </form>
@@ -140,12 +147,11 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-900">
+      <label htmlFor={htmlFor} className="stamp block text-[var(--color-ink-dim)]">
         {label}
+        {hint && <span className="ms-2 normal-case tracking-normal opacity-60">— {hint}</span>}
       </label>
-      {hint && <p className="mb-1.5 mt-0.5 text-xs text-slate-500">{hint}</p>}
-      {!hint && <div className="h-1.5" />}
-      {children}
+      <div className="mt-2.5">{children}</div>
     </div>
   );
 }
